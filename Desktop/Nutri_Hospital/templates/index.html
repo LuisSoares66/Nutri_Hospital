@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+  <h2 style="margin-top:0;">Bem-vindo ao NutriBody Hospital</h2>
+  <p class="muted" style="margin-top:6px;">
+    Use os botões abaixo para registrar dados, consultar a base e gerar relatórios (PDF/CSV).
+  </p>
+</div>
+
+<div class="card">
+  <div><b>Hospitais cadastrados:</b> {{ total_hospitais or 0 }}</div>
+  <div style="margin-top:6px;">
+    <b>Último cadastro:</b>
+    {% if ultimo_cadastro %}
+      ID {{ ultimo_cadastro.id }} — {{ ultimo_cadastro.created_at }}
+    {% else %}
+      Nenhum cadastro ainda
+    {% endif %}
+  </div>
+</div>
+
+<div class="btns">
+  <a class="btn" href="/registro">Registrar dados</a>
+  <a class="btn" href="/leitura">Leitura de dados</a>
+  <a class="btn" href="/relatorios">Relatórios</a>
+</div>
+
+{% endblock %}

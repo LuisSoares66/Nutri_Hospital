@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+  <h2 style="margin-top:0;">Cadastro — Hospital</h2>
+  <p class="muted">Preencha os campos e clique em “Salvar”.</p>
+</div>
+
+<form method="POST" class="card">
+
+  <h3 style="margin-top:0;">Identificação do hospital</h3>
+
+  <label>Nome do hospital</label>
+  <input name="nome_hospital" required value="{{ hospital.nome_hospital if hospital else '' }}">
+
+  <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px;">
+    <div>
+      <label>Endereço</label>
+      <input name="endereco" value="{{ hospital.endereco if hospital else '' }}">
+    </div>
+    <div>
+      <label>Número</label>
+      <input name="numero" value="{{ hospital.numero if hospital else '' }}">
+    </div>
+  </div>
+
+  <label>Complemento</label>
+  <input name="complemento" value="{{ hospital.complemento if hospital else '' }}">
+
+  <div style="display:grid; grid-template-columns: 1.2fr .6fr .8fr; gap:12px;">
+    <div>
+      <label>Cidade</label>
+      <input name="cidade" value="{{ hospital.cidade if hospital else '' }}">
+    </div>
+    <div>
+      <label>Estado</label>
+      <input name="estado" value="{{ hospital.estado if hospital else '' }}">
+    </div>
+    <div>
+      <label>CEP</label>
+      <input name="cep" value="{{ hospital.cep if hospital else '' }}">
+    </div>
+  </div>
+
+  <label>Telefone</label>
+  <input name="telefone" value="{{ hospital.telefone if hospital else '' }}">
+
+  <hr style="margin:18px 0;">
+
+  <h3>Contatos</h3>
+
+  <div class="card" style="border:1px dashed #ccc;">
+    <h4 style="margin-top:0;">Contato (1)</h4>
+    <div style="display:grid; grid-template-columns: 1.4fr 1fr 1fr; gap:12px;">
+      <div>
+        <label>Nome</label>
+        <input name="contato1_nome">
+      </div>
+      <div>
+        <label>Função</label>
+        <input name="contato1_funcao">
+      </div>
+      <div>
+        <label>Telefone</label>
+        <input name="contato1_telefone">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border:1px dashed #ccc;">
+    <h4 style="margin-top:0;">Contato (2)</h4>
+    <div style="display:grid; grid-template-columns: 1.4fr 1fr 1fr; gap:12px;">
+      <div>
+        <label>Nome</label>
+        <input name="contato2_nome">
+      </div>
+      <div>
+        <label>Função</label>
+        <input name="contato2_funcao">
+      </div>
+      <div>
+        <label>Telefone</label>
+        <input name="contato2_telefone">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border:1px dashed #ccc;">
+    <h4 style="margin-top:0;">Contato (3)</h4>
+    <div style="display:grid; grid-template-columns: 1.4fr 1fr 1fr; gap:12px;">
+      <div>
+        <label>Nome</label>
+        <input name="contato3_nome">
+      </div>
+      <div>
+        <label>Função</label>
+        <input name="contato3_funcao">
+      </div>
+      <div>
+        <label>Telefone</label>
+        <input name="contato3_telefone">
+      </div>
+    </div>
+  </div>
+
+  <hr style="margin:18px 0;">
+
+  <h3>Questionário (Hospital)</h3>
+
+  <label>a) Qual a especialidade do hospital?</label>
+  <input name="especialidade">
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+    <div>
+      <label>b) Quantos leitos?</label>
+      <input name="leitos" type="number" min="0">
+    </div>
+    <div>
+      <label>c) Quantos leitos de UTI?</label>
+      <input name="leitos_uti" type="number" min="0">
+    </div>
+  </div>
+
+  <label>d) Fatores decisórios para escolher um produto</label>
+  <textarea name="fatores_decisorios">{{ hospital.fatores_decisorios if hospital else '' }}</textarea>
+
+
+  <label>e) Prioridades para atendimento nutricional de excelência</label>
+  <textarea name="prioridades_excelencia"></textarea>
+
+  <label>f) Certificações (ONA, Canadian, Joint Commission...)</label>
+  <textarea name="certificacoes"></textarea>
+
+  <label>g) O hospital tem EMTN?</label>
+<select name="tem_emtn">
+  <option value="" {% if hospital and not hospital.tem_emtn %}selected{% endif %}>Selecione</option>
+  <option {% if hospital and hospital.tem_emtn == 'Sim' %}selected{% endif %}>Sim</option>
+  <option {% if hospital and hospital.tem_emtn == 'Não' %}selected{% endif %}>Não</option>
+</select>
+
+
+  <label>h) Se sim, quais os membros (nomes e especialidade)?</label>
+  <textarea name="emtn_membros"></textarea>
+
+  <label>i) Tem comissão de feridas?</label>
+  <select name="tem_comissao_feridas">
+    <option value="">Selecione</option>
+    <option>Sim</option>
+    <option>Não</option>
+  </select>
+
+  <label>j) Se sim, quem faz parte?</label>
+  <textarea name="comissao_feridas_membros"></textarea>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+    <div>
+      <label>k) Quantas nutrições enterais por dia?</label>
+      <input name="nutricao_enteral_dia" type="number" min="0">
+    </div>
+    <div>
+      <label>l) Quantos pacientes em TNO por dia?</label>
+      <input name="pacientes_tno_dia" type="number" min="0">
+    </div>
+  </div>
+
+  <label>m) Altas orientadas por semana ou mês</label>
+  <input name="altas_orientadas_periodo" placeholder="Ex.: 12/semana ou 40/mês">
+
+  <label>n) Quem faz esta orientação de alta?</label>
+  <textarea name="quem_orienta_alta"></textarea>
+
+  <label>o/p) Protocolo de evolução de dieta (qual?)</label>
+  <textarea name="protocolo_evolucao_dieta"></textarea>
+
+  <label>q) Protocolo suplementação feridas (qual?)</label>
+  <textarea name="protocolo_suplementacao_feridas"></textarea>
+
+  <label>r) Maior desafio na terapia nutricional do paciente internado</label>
+  <textarea name="maior_desafio"></textarea>
+
+  <label>s) Dieta padrão utilizada</label>
+  <textarea name="dieta_padrao"></textarea>
+
+  <label>t) Bomba de infusão (própria / atrelada / comodato / outro)</label>
+  <textarea name="bomba_infusao"></textarea>
+
+  <label>u) Tem convênio?</label>
+  <select name="tem_convenio">
+    <option value="">Selecione</option>
+    <option>Sim</option>
+    <option>Não</option>
+  </select>
+
+  <label>Principais convênios</label>
+  <textarea name="principais_convenios"></textarea>
+
+  <label>Modelo de pagamento</label>
+  <textarea name="modelo_pagamento"></textarea>
+
+  <label>w) Tem reembolso?</label>
+  <select name="tem_reembolso">
+    <option value="">Selecione</option>
+    <option>Sim</option>
+    <option>Não</option>
+  </select>
+
+  <label>y) Modelo de compras</label>
+  <textarea name="modelo_compras"></textarea>
+
+  <label>z) Contrato (anual/semestral)</label>
+  <input name="contrato_periodicidade" placeholder="Ex.: anual">
+
+  <label>Nova etapa de negociação (quando?)</label>
+  <textarea name="nova_negociacao_quando"></textarea>
+
+  <div class="btns">
+    <button class="btn" type="submit">
+      {% if modo == "editar" %}Salvar alterações{% else %}Salvar{% endif %}
+    </button>
+
+    <a class="btn secondary" href="/registro">Voltar</a>
+  </div>
+</form>
+
+{% endblock %}

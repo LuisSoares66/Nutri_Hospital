@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NutriBody Hospital</title>
+
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; margin:0; background:#f6f7f9; color:#222; font-size:16px; }
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    header { background:#00b300; color:#fff; padding:16px 20px; margin-bottom:20px; }
+    header h1 { margin:0; font-size:22px; }
+    header .subtitle { font-size:14px; opacity:.9; }
+
+    .card { background:#fff; border:1px solid #ddd; border-radius:12px; padding:16px; margin-bottom:16px; }
+    .btns { display:flex; gap:10px; flex-wrap:wrap; }
+
+    .btn {
+      display:inline-block; padding:10px 16px; background:#1f6feb; color:#fff;
+      text-decoration:none; border-radius:8px; border:none; cursor:pointer; font-size:16px; text-align:center;
+    }
+    .btn:hover { background:#1558c0; }
+    .btn.secondary { background:#6c757d; }
+    .btn.secondary:hover { background:#545b62; }
+    .btn.light { background:#0a8754; }
+    .btn.light:hover { background:#08663f; }
+
+    input, textarea, select {
+      width:100%; padding:10px; margin-top:6px; margin-bottom:12px; font-size:16px;
+      border-radius:6px; border:1px solid #ccc;
+    }
+    textarea { min-height:80px; resize:vertical; }
+    label { font-weight:bold; }
+    .muted { color:#666; }
+
+    .flash { padding:12px; border-radius:8px; margin-bottom:16px; }
+    .flash.error { background:#ffd7d7; border:1px solid #e5a1a1; }
+    .flash.success { background:#d9f6e6; border:1px solid #9ad0b5; }
+
+    footer { margin-top:30px; text-align:center; font-size:14px; color:#777; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <h1>NutriBody Hospital</h1>
+      <div class="subtitle">Sistema de acompanhamento de informações de hospitais</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash {{category}}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>NutriBody Hospital • Versão 1.0 • © 2026</footer>
+</body>
+</html>

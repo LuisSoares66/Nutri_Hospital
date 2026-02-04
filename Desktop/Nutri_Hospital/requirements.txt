@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+gunicorn
+psycopg2-binary
+reportlab
+Flask-Migrate
+alembic
+pandas
+openpyxl

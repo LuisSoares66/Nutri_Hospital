@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Hospital (1/4)</h2>
+  <form method="post">
+    <label>a) Qual a especialidade do hospital?</label>
+    <input name="especialidade" value="{{data.get('especialidade','')}}" />
+
+    <div class="row">
+      <div>
+        <label>b) Quantos leitos?</label>
+        <input name="leitos" inputmode="numeric" value="{{data.get('leitos','')}}" />
+      </div>
+      <div>
+        <label>c) Quantos leitos de UTI?</label>
+        <input name="leitos_uti" inputmode="numeric" value="{{data.get('leitos_uti','')}}" />
+      </div>
+    </div>
+
+    <label>d) Quais fatores são decisórios para o hospital escolher um determinado produto?</label>
+    <textarea name="fatores_decisorios">{{data.get('fatores_decisorios','')}}</textarea>
+
+    <label>e) Quais as prioridades do hospital para um atendimento nutricional de excelência?</label>
+    <textarea name="prioridades_excelencia">{{data.get('prioridades_excelencia','')}}</textarea>
+
+    <label>f) Certificações (ONA, Canadian, Joint Commission...)</label>
+    <input name="certificacoes" value="{{data.get('certificacoes','')}}" />
+
+    <label>g) O hospital tem EMTN?</label>
+    <select name="tem_emtn">
+      {% set v = data.get('tem_emtn','') %}
+      <option value="" {% if v=="" %}selected{% endif %}></option>
+      <option value="Sim" {% if v=="Sim" %}selected{% endif %}>Sim</option>
+      <option value="Não" {% if v=="Não" %}selected{% endif %}>Não</option>
+    </select>
+
+    <label>h) Se sim, quais os membros (nomes e especialidade)?</label>
+    <textarea name="emtn_membros">{{data.get('emtn_membros','')}}</textarea>
+
+    <div class="btns">
+      <button type="submit">Próximo</button>
+      <a class="btn secondary" href="/registro">Voltar</a>
+    </div>
+  </form>
+{% endblock %}

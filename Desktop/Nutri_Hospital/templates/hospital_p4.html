@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Hospital (4/4)</h2>
+  <form method="post">
+    <label>t) Bomba de infusão</label>
+    {% set v = data.get('bomba_infusao','') %}
+    <select name="bomba_infusao">
+      <option value="" {% if v=="" %}selected{% endif %}></option>
+      <option value="Própria" {% if v=="Própria" %}selected{% endif %}>Própria</option>
+      <option value="Atrelada à compra de dieta" {% if v=="Atrelada à compra de dieta" %}selected{% endif %}>Atrelada à compra de dieta</option>
+      <option value="Comodato" {% if v=="Comodato" %}selected{% endif %}>Comodato</option>
+      <option value="Outro" {% if v=="Outro" %}selected{% endif %}>Outro</option>
+    </select>
+
+    <label>u) Tem convênio?</label>
+    {% set v2 = data.get('tem_convenio','') %}
+    <select name="tem_convenio">
+      <option value="" {% if v2=="" %}selected{% endif %}></option>
+      <option value="Sim" {% if v2=="Sim" %}selected{% endif %}>Sim</option>
+      <option value="Não" {% if v2=="Não" %}selected{% endif %}>Não</option>
+    </select>
+
+    <label>Principais convênios</label>
+    <textarea name="principais_convenios">{{data.get('principais_convenios','')}}</textarea>
+
+    <label>Modelo de pagamento (NF, brasíndice com %, DG etc.)</label>
+    <input name="modelo_pagamento" value="{{data.get('modelo_pagamento','')}}" />
+
+    <label>w) Tem reembolso?</label>
+    {% set v3 = data.get('tem_reembolso','') %}
+    <select name="tem_reembolso">
+      <option value="" {% if v3=="" %}selected{% endif %}></option>
+      <option value="Sim" {% if v3=="Sim" %}selected{% endif %}>Sim</option>
+      <option value="Não" {% if v3=="Não" %}selected{% endif %}>Não</option>
+    </select>
+
+    <label>y) Modelo de compras (bionexo / contrato / apoio / cotação direta...)</label>
+    <input name="modelo_compras" value="{{data.get('modelo_compras','')}}" />
+
+    <label>z) Se contrato: anual ou semestral? Quando será a nova etapa de negociação?</label>
+    <div class="row">
+      <div>
+        <input name="contrato_periodicidade" placeholder="anual / semestral" value="{{data.get('contrato_periodicidade','')}}" />
+      </div>
+      <div>
+        <input name="nova_negociacao_quando" placeholder="ex.: maio/2026" value="{{data.get('nova_negociacao_quando','')}}" />
+      </div>
+    </div>
+
+    <div class="btns">
+      <button class="secondary" name="voltar" value="1">Voltar</button>
+      <button type="submit">Salvar</button>
+    </div>
+  </form>
+{% endblock %}
