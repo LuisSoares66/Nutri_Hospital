@@ -14,13 +14,16 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
-    # ✅ IMPORTA MODELS AQUI (depois do db existir)
     from . import models  # noqa: F401
 
-    # Blueprints
+    # ✅ CRIA AS TABELAS NO BANCO (TEMPORÁRIO)
+    with app.app_context():
+        db.create_all()
+
     from .routes import bp
     app.register_blueprint(bp)
 
     return app
+
 
 
