@@ -70,7 +70,7 @@
             <td>{{ h.id }}</td>
             <td>{{ h.nome_hospital }}</td>
             <td>{{ h.cidade or '' }}</td>
-            <td><a class="btn secondary" href="{{ url_for('bp.hospitais', selected=h.id) }}">Abrir</a></td>
+            <td><a class="btn secondary" href="{{ url_for('main.hospitais', selected=h.id) }}">Abrir</a></td>
           </tr>
         {% endfor %}
         </tbody>

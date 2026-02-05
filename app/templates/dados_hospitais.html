@@ -7,7 +7,7 @@
   </p>
 
   <div class="row">
-    <form method="get" action="{{ url_for('bp.dados_hospitais') }}" class="row">
+    <form method="get" action="{{ url_for('main.dados_hospitais') }}" class="row">
       <select name="hospital_id" required>
         <option value="">Selecione um hospital...</option>
         {% for h in hospitais_db %}
@@ -17,7 +17,7 @@
         {% endfor %}
       </select>
       <button class="btn secondary" type="submit">Carregar</button>
-      <a class="btn secondary" href="{{ url_for('bp.dados_hospitais') }}">Adicionar novo (escolher hospital)</a>
+      <a class="btn secondary" href="{{ url_for('main.dados_hospitais') }}">Adicionar novo (escolher hospital)</a>
     </form>
   </div>
 
@@ -133,7 +133,7 @@
 
     <div class="row" style="grid-column:1/-1">
       <button class="btn" type="submit">Salvar novo hospital (dados)</button>
-      <a class="btn secondary" href="{{ url_for('bp.hospitais') }}">Voltar</a>
+      <a class="btn secondary" href="{{ url_for('main.hospitais') }}">Voltar</a>
     </div>
   </form>
 

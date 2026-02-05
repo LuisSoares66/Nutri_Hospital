@@ -7,7 +7,7 @@
   </p>
 
   <div class="row">
-    <form method="get" class="row" action="{{ url_for('bp.produtos_hospitais') }}">
+    <form method="get" class="row" action="{{ url_for('main.produtos_hospitais') }}">
       <select name="hospital_id" required>
         <option value="">Selecione um hospital...</option>
         {% for h in hospitais_db %}
