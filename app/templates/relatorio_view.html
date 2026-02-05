@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>Relatório (Tela)</h1>
+  <div class="row">
+    <a class="btn secondary" href="{{ url_for('bp.relatorios', hospital_id=hospital.id) }}">Voltar</a>
+    <a class="btn" href="{{ url_for('bp.relatorio_pdf', hospital_id=hospital.id) }}">Gerar PDF</a>
+  </div>
+
+  <hr>
+
+  <h2>Hospital</h2>
+  <table class="table">
+    <tr><th>ID</th><td>{{ hospital.id }}</td></tr>
+    <tr><th>Nome</th><td>{{ hospital.nome_hospital }}</td></tr>
+    <tr><th>Endereço</th><td>{{ hospital.endereco or '' }}, {{ hospital.numero or '' }} {{ hospital.complemento or '' }}</td></tr>
+    <tr><th>CEP</th><td>{{ hospital.cep or '' }}</td></tr>
+    <tr><th>Cidade/Estado</th><td>{{ hospital.cidade or '' }} - {{ hospital.estado or '' }}</td></tr>
+  </table>
+
+  <h2>Contatos</h2>
+  <table class="table">
+    <thead><tr><th>ID</th><th>Nome</th><th>Cargo</th><th>Telefone</th></tr></thead>
+    <tbody>
+    {% for c in contatos %}
+      <tr><td>{{ c.id }}</td><td>{{ c.nome_contato }}</td><td>{{ c.cargo or '' }}</td><td>{{ c.telefone or '' }}</td></tr>
+    {% else %}
+      <tr><td colspan="4">Sem contatos associados.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Dados do Hospital</h2>
+  {% if dados %}
+  <table class="table">
+    <tr><th>Especialidade</th><td>{{ dados.especialidade or '' }}</td></tr>
+    <tr><th>Leitos</th><td>{{ dados.leitos or '' }}</td></tr>
+    <tr><th>Leitos UTI</th><td>{{ dados.leitos_uti or '' }}</td></tr>
+    <tr><th>Fatores decisórios</th><td>{{ dados.fatores_decisorios or '' }}</td></tr>
+    <tr><th>Prioridades</th><td>{{ dados.prioridades_atendimento or '' }}</td></tr>
+    <tr><th>Certificação</th><td>{{ dados.certificacao or '' }}</td></tr>
+    <tr><th>EMTN</th><td>{{ dados.emtn or '' }}</td></tr>
+    <tr><th>EMTN membros</th><td>{{ dados.emtn_membros or '' }}</td></tr>
+    <tr><th>Comissão feridas</th><td>{{ dados.comissao_feridas or '' }}</td></tr>
+    <tr><th>Comissão feridas membros</th><td>{{ dados.comissao_feridas_membros or '' }}</td></tr>
+    <tr><th>Enteral/dia</th><td>{{ dados.nutricao_enteral_dia or '' }}</td></tr>
+    <tr><th>TNO/dia</th><td>{{ dados.pacientes_tno_dia or '' }}</td></tr>
+    <tr><th>Altas orientadas</th><td>{{ dados.altas_orientadas or '' }}</td></tr>
+    <tr><th>Quem orienta alta</th><td>{{ dados.quem_orienta_alta or '' }}</td></tr>
+    <tr><th>Protocolo evolução dieta</th><td>{{ dados.protocolo_evolucao_dieta or '' }}</td></tr>
+    <tr><th>Qual (evolução dieta)</th><td>{{ dados.protocolo_evolucao_dieta_qual or '' }}</td></tr>
+    <tr><th>Protocolo lesão/feridas</th><td>{{ dados.protocolo_lesao_pressao or '' }}</td></tr>
+    <tr><th>Qual (lesão/feridas)</th><td>{{ dados.protocolo_lesao_pressao_qual or '' }}</td></tr>
+    <tr><th>Maior desafio</th><td>{{ dados.maior_desafio or '' }}</td></tr>
+    <tr><th>Dieta padrão</th><td>{{ dados.dieta_padrao or '' }}</td></tr>
+    <tr><th>Bomba infusão</th><td>{{ dados.bomba_infusao_modelo or '' }}</td></tr>
+    <tr><th>Fornecedor</th><td>{{ dados.fornecedor or '' }}</td></tr>
+    <tr><th>Convênio/modelo pagamento</th><td>{{ dados.convenio_empresas or '' }}</td></tr>
+    <tr><th>Reembolso</th><td>{{ dados.reembolso or '' }}</td></tr>
+    <tr><th>Modelo compras</th><td>{{ dados.modelo_compras or '' }}</td></tr>
+    <tr><th>Contrato tipo</th><td>{{ dados.contrato_tipo or '' }}</td></tr>
+    <tr><th>Nova negociação</th><td>{{ dados.nova_etapa_negociacao or '' }}</td></tr>
+  </table>
+  {% else %}
+    <p class="small">Sem dados cadastrados.</p>
+  {% endif %}
+
+  <h2>Produtos</h2>
+  <table class="table">
+    <thead><tr><th>ID</th><th>Marca</th><th>Produto</th><th>Qtd</th></tr></thead>
+    <tbody>
+    {% for p in produtos %}
+      <tr><td>{{ p.id }}</td><td>{{ p.marca_planilha or '' }}</td><td>{{ p.produto }}</td><td>{{ p.quantidade }}</td></tr>
+    {% else %}
+      <tr><td colspan="4">Sem produtos cadastrados.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
