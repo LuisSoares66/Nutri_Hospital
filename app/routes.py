@@ -265,3 +265,38 @@ def relatorio_pdf(hospital_id):
         as_attachment=True,
         download_name=f"relatorio_hospital_{hospital_id}.pdf"
     )
+    
+@bp.route("/hospitais/importar_excel")
+def importar_hospitais_excel():
+    # pasta data/ (onde está hospitais.xlsx)
+    data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    data_dir = os.path.abspath(data_dir)
+
+    rows = load_hospitais_from_excel(data_dir)
+
+    criados = 0
+    for r in rows:
+        nome = (r.get("nome_hospital") or "").strip()
+        if not nome:
+            continue
+
+        # evita duplicar hospital
+        existe = Hospital.query.filter_by(nome_hospital=nome).first()
+        if existe:
+            continue
+
+        h = Hospital(
+            nome_hospital=nome,
+            endereco=r.get("endereco"),
+            numero=r.get("numero"),
+            complemento=r.get("complemento"),
+            cep=r.get("cep"),
+            cidade=r.get("cidade"),
+            estado=r.get("estado"),
+        )
+        db.session.add(h)
+        criados += 1
+
+    db.session.commit()
+    return f"Importação concluída. Hospitais criados: {criados}"
+
