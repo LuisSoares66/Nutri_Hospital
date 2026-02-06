@@ -1,159 +1,62 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="card">
-  <h1>Dados Hospitais</h1>
-  <p class="small">
-    Lendo <b>dadoshospitais.xlsx</b> para referência. Selecione um hospital cadastrado para editar os dados (1 por hospital).
-  </p>
 
-  <div class="row">
-    <form method="get" action="{{ url_for('bp.dados_hospitais') }}" class="row">
-      <select name="hospital_id" required>
-        <option value="">Selecione um hospital...</option>
-        {% for h in hospitais_db %}
-          <option value="{{ h.id }}" {% if selected_hospital and h.id==selected_hospital.id %}selected{% endif %}>
-            {{ h.id }} - {{ h.nome_hospital }}
-          </option>
-        {% endfor %}
-      </select>
-      <button class="btn secondary" type="submit">Carregar</button>
-      <a class="btn secondary" href="{{ url_for('bp.dados_hospitais') }}">Adicionar novo (escolher hospital)</a>
-    </form>
+{% block content %}
+<div class="container">
+  <h1>Dados do Hospital – {{ hospital.nome_hospital }}</h1>
+
+  <div class="actions">
+    <a class="btn secondary"
+       href="{{ url_for('main.importar_dados_excel', hospital_id=hospital.id) }}">
+      Importar DADOS (Excel)
+    </a>
+
+    <a class="btn primary"
+       href="{{ url_for('main.hospitais') }}">
+      Voltar
+    </a>
   </div>
 
   <hr>
 
-  <form method="post" class="grid">
-    <div style="grid-column:1/-1">
-      <label>Hospital selecionado</label>
-      <select name="id_hospital" required>
-        <option value="">Selecione...</option>
-        {% for h in hospitais_db %}
-          <option value="{{ h.id }}" {% if selected_hospital and h.id==selected_hospital.id %}selected{% endif %}>
-            {{ h.id }} - {{ h.nome_hospital }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label>Qual a especialidade do hospital?</label>
-      <textarea name="especialidade">{{ dados_db.especialidade if dados_db else '' }}</textarea>
-    </div>
-    <div>
-      <label>Quantos leitos?</label>
-      <input name="leitos" value="{{ dados_db.leitos if dados_db else '' }}">
-      <label>Quantos leitos de UTI?</label>
-      <input name="leitos_uti" value="{{ dados_db.leitos_uti if dados_db else '' }}">
-    </div>
-
-    <div>
-      <label>Quais fatores são decisórios para o hospital escolher um determinado produto?</label>
-      <textarea name="fatores_decisorios">{{ dados_db.fatores_decisorios if dados_db else '' }}</textarea>
-    </div>
-    <div>
-      <label>Quais as prioridades do hospital para um atendimento nutricional de excelência?</label>
-      <textarea name="prioridades_atendimento">{{ dados_db.prioridades_atendimento if dados_db else '' }}</textarea>
-    </div>
-
-    <div>
-      <label>O hospital tem certificação ONA, CANADIAN, Joint Comission,...)?</label>
-      <textarea name="certificacao">{{ dados_db.certificacao if dados_db else '' }}</textarea>
-    </div>
-    <div>
-      <label>O hospital tem EMTN?</label>
-      <input name="emtn" value="{{ dados_db.emtn if dados_db else '' }}" placeholder="Sim/Não">
-      <label>Se sim, quais os membros (nomes e especialidade)?</label>
-      <textarea name="emtn_membros">{{ dados_db.emtn_membros if dados_db else '' }}</textarea>
-    </div>
-
-    <div>
-      <label>Tem comissão de feridas?</label>
-      <input name="comissao_feridas" value="{{ dados_db.comissao_feridas if dados_db else '' }}" placeholder="Sim/Não">
-      <label>Se sim, quem faz parte?</label>
-      <textarea name="comissao_feridas_membros">{{ dados_db.comissao_feridas_membros if dados_db else '' }}</textarea>
-    </div>
-    <div>
-      <label>Tem quantas nutrição enteral por dia?</label>
-      <input name="nutricao_enteral_dia" value="{{ dados_db.nutricao_enteral_dia if dados_db else '' }}">
-      <label>Tem quantos pacientes em TNO por dia?</label>
-      <input name="pacientes_tno_dia" value="{{ dados_db.pacientes_tno_dia if dados_db else '' }}">
-    </div>
-
-    <div>
-      <label>Quantas altas orientadas por semana ou por mês?</label>
-      <input name="altas_orientadas" value="{{ dados_db.altas_orientadas if dados_db else '' }}">
-      <label>Quem faz esta orientação de alta?</label>
-      <textarea name="quem_orienta_alta">{{ dados_db.quem_orienta_alta if dados_db else '' }}</textarea>
-    </div>
-    <div>
-      <label>Existe um protocolo de evolução de dieta?</label>
-      <input name="protocolo_evolucao_dieta" value="{{ dados_db.protocolo_evolucao_dieta if dados_db else '' }}" placeholder="Sim/Não">
-      <label>Qual?</label>
-      <textarea name="protocolo_evolucao_dieta_qual">{{ dados_db.protocolo_evolucao_dieta_qual if dados_db else '' }}</textarea>
-    </div>
-
-    <div>
-      <label>Existe um protocolo para suplementação de pacientes com lesão por pressão ou feridas?</label>
-      <input name="protocolo_lesao_pressao" value="{{ dados_db.protocolo_lesao_pressao if dados_db else '' }}" placeholder="Sim/Não">
-      <label>Qual?</label>
-      <textarea name="protocolo_lesao_pressao_qual">{{ dados_db.protocolo_lesao_pressao_qual if dados_db else '' }}</textarea>
-    </div>
-
-    <div>
-      <label>Qual o maior desafio na terapia nutricional do paciente internando no hospital?</label>
-      <textarea name="maior_desafio">{{ dados_db.maior_desafio if dados_db else '' }}</textarea>
-    </div>
-    <div>
-      <label>Qual a dieta padrão utilizada no hospital?</label>
-      <textarea name="dieta_padrao">{{ dados_db.dieta_padrao if dados_db else '' }}</textarea>
-    </div>
-
-    <div>
-      <label>Em relação à bomba de infusão: própria / atrelada / comodato / outro</label>
-      <textarea name="bomba_infusao_modelo">{{ dados_db.bomba_infusao_modelo if dados_db else '' }}</textarea>
-      <label>Qual fornecedor?</label>
-      <textarea name="fornecedor">{{ dados_db.fornecedor if dados_db else '' }}</textarea>
-    </div>
-    <div>
-      <label>Tem convênio com empresas? Qual(is) e qual Modelo de pagamento (NF, brasindice com de 100%, DG)?</label>
-      <textarea name="convenio_empresas">{{ dados_db.convenio_empresas if dados_db else '' }}</textarea>
-      <label>Tem reembolso?</label>
-      <textarea name="reembolso">{{ dados_db.reembolso if dados_db else '' }}</textarea>
-    </div>
-
-    <div style="grid-column:1/-1">
-      <label>Qual modelo de compras do hospital? bionexo / contrato / apoio / cotação direta</label>
-      <textarea name="modelo_compras">{{ dados_db.modelo_compras if dados_db else '' }}</textarea>
-      <label>Se contrato, é anual ou semestral?</label>
-      <textarea name="contrato_tipo">{{ dados_db.contrato_tipo if dados_db else '' }}</textarea>
-      <label>Quando será a nova etapa de negociação?</label>
-      <textarea name="nova_etapa_negociacao">{{ dados_db.nova_etapa_negociacao if dados_db else '' }}</textarea>
-    </div>
-
-    <div class="row" style="grid-column:1/-1">
-      <button class="btn" type="submit">Salvar novo hospital (dados)</button>
-      <a class="btn secondary" href="{{ url_for('bp.hospitais') }}">Voltar</a>
-    </div>
-  </form>
-
-  <hr>
-  <h2>Prévia do Excel (dadoshospitais.xlsx)</h2>
-  <p class="small">Mostrando apenas algumas colunas para não ficar gigante.</p>
-  <table class="table">
-    <thead>
-      <tr><th>id_hospital</th><th>Especialidade</th><th>Leitos</th><th>Leitos UTI</th></tr>
-    </thead>
-    <tbody>
-    {% for r in excel_rows[:80] %}
-      <tr>
-        <td>{{ r.get('id_hospital','') }}</td>
-        <td>{{ r.get('Qual a especialidade do hospital?','') }}</td>
-        <td>{{ r.get('Quantos leitos?','') }}</td>
-        <td>{{ r.get('Quantos leitos de UTI?','') }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  {% if not dados %}
+    <p>Nenhum dado cadastrado para este hospital.</p>
+  {% else %}
+    <table class="table">
+      <tbody>
+        <tr>
+          <th>Especialidade</th>
+          <td>{{ dados.especialidade }}</td>
+        </tr>
+        <tr>
+          <th>Leitos</th>
+          <td>{{ dados.leitos }}</td>
+        </tr>
+        <tr>
+          <th>Leitos UTI</th>
+          <td>{{ dados.leitos_uti }}</td>
+        </tr>
+        <tr>
+          <th>Fatores decisórios</th>
+          <td>{{ dados.fatores_decisorios }}</td>
+        </tr>
+        <tr>
+          <th>Prioridades atendimento</th>
+          <td>{{ dados.prioridades_atendimento }}</td>
+        </tr>
+        <tr>
+          <th>Certificação</th>
+          <td>{{ dados.certificacao }}</td>
+        </tr>
+        <tr>
+          <th>EMTN</th>
+          <td>{{ dados.emtn }}</td>
+        </tr>
+        <tr>
+          <th>Membros EMTN</th>
+          <td>{{ dados.emtn_membros }}</td>
+        </tr>
+      </tbody>
+    </table>
+  {% endif %}
 </div>
 {% endblock %}

@@ -1,129 +1,42 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="card">
-  <h1>Produtos Hospitais</h1>
-  <p class="small">
-    Selecione um hospital cadastrado. Para adicionar produto, o catálogo vem do <b>produtos.xlsx</b> (planilhas PRODIET / NESTLÉ / DANONE / FRESENIUS).
-  </p>
 
-  <div class="row">
-    <form method="get" class="row" action="{{ url_for('bp.produtos_hospitais') }}">
-      <select name="hospital_id" required>
-        <option value="">Selecione um hospital...</option>
-        {% for h in hospitais_db %}
-          <option value="{{ h.id }}" {% if selected_hospital and h.id==selected_hospital.id %}selected{% endif %}>
-            {{ h.id }} - {{ h.nome_hospital }}
-          </option>
-        {% endfor %}
-      </select>
-      <button class="btn secondary" type="submit">Carregar</button>
-    </form>
+{% block content %}
+<div class="container">
+  <h1>Produtos – {{ hospital.nome_hospital }}</h1>
+
+  <div class="actions">
+    <a class="btn secondary"
+       href="{{ url_for('main.importar_produtos_excel', hospital_id=hospital.id) }}">
+      Importar PRODUTOS (Excel)
+    </a>
+
+    <a class="btn primary"
+       href="{{ url_for('main.hospitais') }}">
+      Voltar
+    </a>
   </div>
 
   <hr>
 
-  <div class="grid">
-    <div>
-      <h2>Adicionar novo produto</h2>
-      {% if not selected_hospital %}
-        <p class="small">Selecione um hospital acima para habilitar o cadastro.</p>
-      {% else %}
-      <form method="post" class="grid">
-        <input type="hidden" name="hospital_id" value="{{ selected_hospital.id }}">
-
-        <div>
-          <label>Marca (planilha)</label>
-          <select name="marca_planilha" required id="marca">
-            <option value="">Selecione...</option>
-            {% for k in catalogo.keys() %}
-              <option value="{{ k }}">{{ k }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div>
-          <label>Produto</label>
-          <select name="produto" required id="produto">
-            <option value="">Selecione a marca primeiro...</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Quantidade</label>
-          <input name="quantidade" type="number" value="1" min="0">
-        </div>
-
-        <div class="row" style="grid-column:1/-1">
-          <button class="btn" type="submit">Adicionar ao hospital</button>
-        </div>
-      </form>
-      {% endif %}
-
-      <script>
-        const catalogo = {{ catalogo | tojson }};
-        const marcaEl = document.getElementById("marca");
-        const prodEl  = document.getElementById("produto");
-
-        function setProdutos(marca){
-          prodEl.innerHTML = "";
-          const opt0 = document.createElement("option");
-          opt0.value = "";
-          opt0.textContent = "Selecione...";
-          prodEl.appendChild(opt0);
-
-          if(!catalogo[marca]) return;
-          const produtos = catalogo[marca].map(r => (r["Produto"] || "").toString().trim()).filter(Boolean);
-          produtos.sort((a,b)=>a.localeCompare(b));
-          for(const p of produtos){
-            const opt = document.createElement("option");
-            opt.value = p;
-            opt.textContent = p;
-            prodEl.appendChild(opt);
-          }
-        }
-        if(marcaEl){
-          marcaEl.addEventListener("change", e => setProdutos(e.target.value));
-        }
-      </script>
-
-      <hr>
-
-      <h2>Produtos cadastrados (DB)</h2>
-      {% if selected_hospital %}
-        <table class="table">
-          <thead><tr><th>ID</th><th>Marca</th><th>Produto</th><th>Quantidade</th></tr></thead>
-          <tbody>
-          {% for p in produtos_db %}
-            <tr>
-              <td>{{ p.id }}</td>
-              <td>{{ p.marca_planilha or '' }}</td>
-              <td>{{ p.produto }}</td>
-              <td>{{ p.quantidade }}</td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <p class="small">Selecione um hospital para ver produtos.</p>
-      {% endif %}
-    </div>
-
-    <div>
-      <h2>Prévia do Excel (produtoshospitais.xlsx)</h2>
-      <table class="table">
-        <thead><tr><th>hospital_id</th><th>nome_hospital</th><th>produto</th><th>quantidade</th></tr></thead>
-        <tbody>
-        {% for r in excel_rows[:120] %}
-          <tr>
-            <td>{{ r.get('hospital_id','') }}</td>
-            <td>{{ r.get('nome_hospital','') }}</td>
-            <td>{{ r.get('produto','') }}</td>
-            <td>{{ r.get('quantidade','') }}</td>
-          </tr>
+  {% if produtos|length == 0 %}
+    <p>Nenhum produto cadastrado.</p>
+  {% else %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in produtos %}
+        <tr>
+          <td>{{ p.produto }}</td>
+          <td>{{ p.quantidade }}</td>
+        </tr>
         {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+      </tbody>
+    </table>
+  {% endif %}
 </div>
 {% endblock %}

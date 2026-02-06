@@ -1,103 +1,55 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="card">
-  <h1>Hospitais</h1>
-  <p class="small">
-    Lendo <b>hospitais.xlsx</b> (em <code>/data</code>) para referência e salvando no banco (Render).
-  </p>
+<div class="container">
+  <div class="header-row">
+    <h1>Hospitais</h1>
+    <a class="btn primary" href="{{ url_for('main.novo_hospital') }}">+ Novo Hospital</a>
+  </div>
 
-  <div class="grid">
-    <div>
-      <h2>Cadastro / Edição</h2>
-      <form method="post" class="grid">
-        <div>
-          <label>id_hospital</label>
-          <input name="id_hospital" value="{{ selected_hospital.id if selected_hospital else '' }}" placeholder="Ex: 1">
-        </div>
-        <div>
-          <label>nome_hospital</label>
-          <input name="nome_hospital" value="{{ selected_hospital.nome_hospital if selected_hospital else '' }}" required>
-        </div>
-
-        <div>
-          <label>endereco</label>
-          <input name="endereco" value="{{ selected_hospital.endereco if selected_hospital else '' }}">
-        </div>
-        <div>
-          <label>numero</label>
-          <input name="numero" value="{{ selected_hospital.numero if selected_hospital else '' }}">
-        </div>
-
-        <div>
-          <label>complemento</label>
-          <input name="complemento" value="{{ selected_hospital.complemento if selected_hospital else '' }}">
-        </div>
-        <div>
-          <label>cep</label>
-          <input name="cep" value="{{ selected_hospital.cep if selected_hospital else '' }}">
-        </div>
-
-        <div>
-          <label>cidade</label>
-          <input name="cidade" value="{{ selected_hospital.cidade if selected_hospital else '' }}">
-        </div>
-        <div>
-          <label>estado</label>
-          <input name="estado" value="{{ selected_hospital.estado if selected_hospital else '' }}">
-        </div>
-
-        <div class="row" style="grid-column:1/-1">
-          <button class="btn" type="submit">Salvar no DB (Render)</button>
-          <a class="btn secondary" href="{{ url_for('bp.contatos') }}">Abrir CONTATOS</a>
-          <a class="btn secondary" href="{{ url_for('bp.dados_hospitais') }}">Abrir DADOS HOSPITAIS</a>
-          <a class="btn secondary" href="{{ url_for('bp.produtos_hospitais') }}">Abrir PRODUTOS HOSPITAIS</a>
-          <a class="btn secondary" href="{{ url_for('bp.relatorios') }}">Abrir RELATÓRIOS</a>
-        </div>
-      </form>
-
-      <hr>
-
-      <h2>Hospitais cadastrados no DB</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>ID</th><th>Nome</th><th>Cidade</th><th>Selecionar</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for h in hospitais_db %}
+  {% if hospitais|length == 0 %}
+    <p>Nenhum hospital cadastrado.</p>
+  {% else %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Hospital</th>
+          <th>Cidade</th>
+          <th>UF</th>
+          <th style="width: 420px;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in hospitais %}
           <tr>
             <td>{{ h.id }}</td>
             <td>{{ h.nome_hospital }}</td>
-            <td>{{ h.cidade or '' }}</td>
-            <td><a class="btn secondary" href="{{ url_for('bp.hospitais', selected=h.id) }}">Abrir</a></td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
+            <td>{{ h.cidade or "" }}</td>
+            <td>{{ h.estado or "" }}</td>
+            <td class="actions">
+              <a class="btn secondary" href="{{ url_for('main.editar_hospital', hospital_id=h.id) }}">Editar</a>
 
-    <div>
-      <h2>Prévia do Excel (hospitais.xlsx)</h2>
-      <p class="small">Somente leitura na tela para você conferir.</p>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>id_hospital</th><th>nome_hospital</th><th>cidade</th><th>estado</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for r in excel_rows[:120] %}
-          <tr>
-            <td>{{ r.get('id_hospital','') }}</td>
-            <td>{{ r.get('nome_hospital','') }}</td>
-            <td>{{ r.get('cidade','') }}</td>
-            <td>{{ r.get('estado','') }}</td>
+              <a class="btn secondary" href="{{ url_for('main.contatos', hospital_id=h.id) }}">CONTATOS</a>
+
+              <a class="btn secondary" href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">DADOS</a>
+
+              <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">PRODUTOS</a>
+
+              <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=h.id) }}">RELATÓRIOS</a>
+              <a class="btn danger"
+                href="{{ url_for('main.importar_excel_uma_vez') }}"
+                onclick="return confirm('Importar TODOS os dados do Excel (apenas 1 vez)?')">
+                IMPORTAR TUDO (ADMIN - UMA VEZ)
+              </a>
+
+
+
+            </td>
           </tr>
         {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+      </tbody>
+    </table>
+  {% endif %}
 </div>
 {% endblock %}

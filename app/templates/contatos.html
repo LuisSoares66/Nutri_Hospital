@@ -1,94 +1,44 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="card">
-  <h1>Contatos</h1>
-  <p class="small">Lendo <b>contatos.xlsx</b> para referência e salvando no DB. Pode salvar sem id_hospital.</p>
+<div class="container">
+  <h1>Contatos – {{ hospital.nome_hospital }}</h1>
 
-  <div class="grid">
-    <div>
-      <h2>Novo / Editar Contato</h2>
-      <form method="post" class="grid">
-        <div>
-          <label>id_contato</label>
-          <input name="id_contato" placeholder="Ex: 10 (opcional)">
-        </div>
-        <div>
-          <label>id_hospital (opcional)</label>
-          <select name="id_hospital">
-            <option value="">(sem associação)</option>
-            {% for h in hospitais_db %}
-              <option value="{{ h.id }}">{{ h.id }} - {{ h.nome_hospital }}</option>
-            {% endfor %}
-          </select>
-        </div>
+  <div class="actions">
+    <a class="btn secondary"
+       href="{{ url_for('main.importar_contatos_excel', hospital_id=hospital.id) }}">
+      Importar CONTATOS (Excel)
+    </a>
 
-        <div>
-          <label>hospital_nome (opcional)</label>
-          <input name="hospital_nome" placeholder="Se não informar, pega do hospital selecionado">
-        </div>
-        <div>
-          <label>nome_contato</label>
-          <input name="nome_contato" required>
-        </div>
-
-        <div>
-          <label>cargo</label>
-          <input name="cargo">
-        </div>
-        <div>
-          <label>telefone</label>
-          <input name="telefone">
-        </div>
-
-        <div class="row" style="grid-column:1/-1">
-          <button class="btn" type="submit">Salvar no DB (Render)</button>
-          <a class="btn secondary" href="{{ url_for('bp.hospitais') }}">Voltar para Hospitais</a>
-        </div>
-      </form>
-
-      <hr>
-      <h2>Últimos contatos no DB</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>ID</th><th>Hospital</th><th>Nome</th><th>Cargo</th><th>Telefone</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for c in contatos_db %}
-          <tr>
-            <td>{{ c.id }}</td>
-            <td>{{ c.hospital_id or '' }} {{ c.hospital_nome or '' }}</td>
-            <td>{{ c.nome_contato }}</td>
-            <td>{{ c.cargo or '' }}</td>
-            <td>{{ c.telefone or '' }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div>
-      <h2>Prévia do Excel (contatos.xlsx)</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>id_contato</th><th>id_hospital</th><th>nome_contato</th><th>cargo</th><th>telefone</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for r in excel_rows[:120] %}
-          <tr>
-            <td>{{ r.get('id_contato','') }}</td>
-            <td>{{ r.get('id_hospital','') }}</td>
-            <td>{{ r.get('nome_contato','') }}</td>
-            <td>{{ r.get('cargo','') }}</td>
-            <td>{{ r.get('telefone','') }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <a class="btn primary"
+       href="{{ url_for('main.hospitais') }}">
+      Voltar
+    </a>
   </div>
+
+  <hr>
+
+  {% if contatos|length == 0 %}
+    <p>Nenhum contato cadastrado.</p>
+  {% else %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Cargo</th>
+          <th>Telefone</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contatos %}
+        <tr>
+          <td>{{ c.nome_contato }}</td>
+          <td>{{ c.cargo or "" }}</td>
+          <td>{{ c.telefone or "" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
 </div>
 {% endblock %}
