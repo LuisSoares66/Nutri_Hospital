@@ -101,7 +101,7 @@ def editar_hospital(hospital_id):
 # ======================================================
 # CONTATOS
 # ======================================================
-@bp.route("/hospitais/<int:hospital_id>/contatos", methods=["GET", "POST"])
+@bp.route("/hospitais/<int:hospital_id>/contatos")#, methods=["GET", "POST"])
 def contatos(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
@@ -156,7 +156,7 @@ def dados_hospital(hospital_id):
 # ======================================================
 # PRODUTOS DO HOSPITAL
 # ======================================================
-@bp.route("/hospitais/<int:hospital_id>/produtos", methods=["GET", "POST"])
+@bp.route("/hospitais/<int:hospital_id>/produtos")#, methods=["GET", "POST"])
 def produtos_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
