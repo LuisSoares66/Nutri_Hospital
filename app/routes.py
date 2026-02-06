@@ -2,6 +2,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from . import db
 from .models import Hospital, Contato, DadosHospital, ProdutoHospital
 from .excel_loader import load_hospitais_from_excel
+from .excel_loader import load_contatos_from_excel
+from .excel_loader import load_dados_hospitais_from_excel
+from .excel_loader import load_produtos_hospitais_from_excel
+
 import os
 import io
 
@@ -302,4 +306,84 @@ def importar_hospitais_excel():
 
     db.session.commit()
     return f"Importação concluída. Hospitais criados: {criados}"
+
+@bp.route("/hospitais/<int:hospital_id>/contatos/importar_excel")
+def importar_contatos_excel(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+
+    rows = load_contatos_from_excel(data_dir)
+
+    criados = 0
+    for r in rows:
+        nome = (r.get("nome_contato") or "").strip()
+        if not nome:
+            continue
+
+        contato = Contato(
+            hospital_id=hospital_id,
+            hospital_nome=hospital.nome_hospital,
+            nome_contato=nome,
+            cargo=r.get("cargo"),
+            telefone=r.get("telefone"),
+        )
+        db.session.add(contato)
+        criados += 1
+
+    db.session.commit()
+    return f"Contatos importados: {criados}"
+
+
+@bp.route("/hospitais/<int:hospital_id>/dados/importar_excel")
+def importar_dados_excel(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+
+    rows = load_dados_hospitais_from_excel(data_dir)
+    if not rows:
+        return "Nenhum dado encontrado no Excel"
+
+    r = rows[0]  # 1 hospital por vez
+
+    dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
+    if not dados:
+        dados = DadosHospital(hospital_id=hospital_id)
+        db.session.add(dados)
+
+    dados.especialidade = r.get("Qual a especialidade do hospital?")
+    dados.leitos = r.get("Quantos leitos?")
+    dados.leitos_uti = r.get("Quantos leitos de UTI?")
+    dados.fatores_decisorios = r.get("Quais fatores são decisórios para o hospital escolher um determinado produto?")
+    dados.prioridades_atendimento = r.get("Quais as prioridas do hospital para um atendimento nutricional de excelencia?")
+    dados.certificacao = r.get("O hospital tem certificação ONA, CANADIAN, Joint Comission,...)?")
+    dados.emtn = r.get("O hospital tem EMTN?")
+    dados.emtn_membros = r.get("Se sim, quais os membro (nomes e especialidade)?")
+
+    db.session.commit()
+    return "Dados do hospital importados com sucesso"
+
+@bp.route("/hospitais/<int:hospital_id>/produtos/importar_excel")
+def importar_produtos_excel(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+
+    rows = load_produtos_hospitais_from_excel(data_dir)
+
+    criados = 0
+    for r in rows:
+        produto = (r.get("produto") or "").strip()
+        if not produto:
+            continue
+
+        ph = ProdutoHospital(
+            hospital_id=hospital_id,
+            nome_hospital=hospital.nome_hospital,
+            produto=produto,
+            quantidade=int(r.get("quantidade") or 0),
+        )
+        db.session.add(ph)
+        criados += 1
+
+    db.session.commit()
+    return f"Produtos importados: {criados}"
 
