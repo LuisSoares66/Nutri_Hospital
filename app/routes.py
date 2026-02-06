@@ -1,28 +1,46 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from app import db
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
+from . import db
+from .models import Hospital, Contato, DadosHospital, ProdutoHospital
+
+# Se você tiver o pdf_report.py
+try:
+    from .pdf_report import build_hospital_report_pdf
+except Exception:
+    build_hospital_report_pdf = None
 
 bp = Blueprint("main", __name__)
 
 
+# ======================================================
+# HOME
+# ======================================================
 @bp.route("/")
 def index():
     return redirect(url_for("main.hospitais"))
 
 
+# ======================================================
+# LISTA DE HOSPITAIS
+# ======================================================
 @bp.route("/hospitais")
 def hospitais():
-    from app.models import Hospital
     hospitais_db = Hospital.query.order_by(Hospital.nome_hospital.asc()).all()
     return render_template("hospitais.html", hospitais=hospitais_db)
 
 
+# ======================================================
+# NOVO HOSPITAL
+# ======================================================
 @bp.route("/hospitais/novo", methods=["GET", "POST"])
 def novo_hospital():
-    from app.models import Hospital
-
     if request.method == "POST":
+        nome = (request.form.get("nome_hospital") or "").strip()
+        if not nome:
+            flash("Informe o nome do hospital.", "error")
+            return redirect(url_for("main.novo_hospital"))
+
         hospital = Hospital(
-            nome_hospital=request.form.get("nome_hospital"),
+            nome_hospital=nome,
             endereco=request.form.get("endereco"),
             numero=request.form.get("numero"),
             complemento=request.form.get("complemento"),
@@ -35,35 +53,98 @@ def novo_hospital():
         flash("Hospital cadastrado com sucesso!", "success")
         return redirect(url_for("main.hospitais"))
 
-    return render_template("hospital_form.html")
+    return render_template("hospital_form.html", hospital=None)
 
 
-@bp.route("/contatos", methods=["GET", "POST"])
-def contatos():
-    from app.models import Contato, Hospital
+# ======================================================
+# EDITAR HOSPITAL
+# ======================================================
+@bp.route("/hospitais/<int:hospital_id>/editar", methods=["GET", "POST"])
+def editar_hospital(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
 
     if request.method == "POST":
+        hospital.nome_hospital = (request.form.get("nome_hospital") or "").strip()
+        hospital.endereco = request.form.get("endereco")
+        hospital.numero = request.form.get("numero")
+        hospital.complemento = request.form.get("complemento")
+        hospital.cep = request.form.get("cep")
+        hospital.cidade = request.form.get("cidade")
+        hospital.estado = request.form.get("estado")
+
+        if not hospital.nome_hospital:
+            flash("Informe o nome do hospital.", "error")
+            return redirect(url_for("main.editar_hospital", hospital_id=hospital_id))
+
+        db.session.commit()
+        flash("Hospital atualizado com sucesso!", "success")
+        return redirect(url_for("main.hospitais"))
+
+    return render_template("hospital_form.html", hospital=hospital)
+
+
+# ======================================================
+# CONTATOS (ASSOCIADOS A UM HOSPITAL)
+# ======================================================
+@bp.route("/hospitais/<int:hospital_id>/contatos", methods=["GET", "POST"])
+def contatos(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+
+    if request.method == "POST":
+        nome_contato = (request.form.get("nome_contato") or "").strip()
+        if not nome_contato:
+            flash("Informe o nome do contato.", "error")
+            return redirect(url_for("main.contatos", hospital_id=hospital_id))
+
         contato = Contato(
-            hospital_id=request.form.get("hospital_id") or None,
-            hospital_nome=request.form.get("hospital_nome"),
-            nome_contato=request.form.get("nome_contato"),
+            hospital_id=hospital_id,
+            hospital_nome=hospital.nome_hospital,
+            nome_contato=nome_contato,
             cargo=request.form.get("cargo"),
             telefone=request.form.get("telefone"),
         )
         db.session.add(contato)
         db.session.commit()
-        flash("Contato salvo com sucesso!", "success")
-        return redirect(url_for("main.contatos"))
+        flash("Contato salvo!", "success")
+        return redirect(url_for("main.contatos", hospital_id=hospital_id))
 
-    contatos_db = Contato.query.order_by(Contato.nome_contato.asc()).all()
-    hospitais_db = Hospital.query.order_by(Hospital.nome_hospital.asc()).all()
-    return render_template("contatos.html", contatos=contatos_db, hospitais=hospitais_db)
+    contatos_db = Contato.query.filter_by(hospital_id=hospital_id).order_by(Contato.nome_contato.asc()).all()
+    return render_template("contatos.html", hospital=hospital, contatos=contatos_db)
 
 
+# ======================================================
+# CONTATOS (SEM ASSOCIAÇÃO - OPCIONAL)
+# ======================================================
+@bp.route("/contatos", methods=["GET", "POST"])
+def contatos_livres():
+    if request.method == "POST":
+        nome_contato = (request.form.get("nome_contato") or "").strip()
+        if not nome_contato:
+            flash("Informe o nome do contato.", "error")
+            return redirect(url_for("main.contatos_livres"))
+
+        contato = Contato(
+            hospital_id=None,
+            hospital_nome=request.form.get("hospital_nome"),
+            nome_contato=nome_contato,
+            cargo=request.form.get("cargo"),
+            telefone=request.form.get("telefone"),
+        )
+        db.session.add(contato)
+        db.session.commit()
+        flash("Contato salvo sem associação!", "success")
+        return redirect(url_for("main.contatos_livres"))
+
+    contatos_db = Contato.query.filter(Contato.hospital_id.is_(None)).order_by(Contato.nome_contato.asc()).all()
+    return render_template("contatos.html", hospital=None, contatos=contatos_db)
+
+
+# ======================================================
+# DADOS DO HOSPITAL
+# (igual ao que você mostrou, mantendo a rota)
+# ======================================================
 @bp.route("/hospitais/<int:hospital_id>/dados", methods=["GET", "POST"])
 def dados_hospital(hospital_id):
-    from app.models import Hospital, DadosHospital
-
     hospital = Hospital.query.get_or_404(hospital_id)
     dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
 
@@ -72,7 +153,7 @@ def dados_hospital(hospital_id):
             dados = DadosHospital(hospital_id=hospital_id)
             db.session.add(dados)
 
-        # Ajuste os nomes dos campos conforme seu HTML
+        # Preencha aqui com seus campos do formulário:
         dados.especialidade = request.form.get("especialidade")
         dados.leitos = request.form.get("leitos")
         dados.leitos_uti = request.form.get("leitos_uti")
@@ -103,41 +184,84 @@ def dados_hospital(hospital_id):
 
         db.session.commit()
         flash("Dados do hospital salvos!", "success")
-        return redirect(url_for("main.hospitais"))
+        return redirect(url_for("main.dados_hospital", hospital_id=hospital_id))
 
-    return render_template("dados_hospital.html", hospital=hospital, dados=dados)
+    return render_template("dados_hospitais.html", hospital=hospital, dados=dados)
 
 
+# ======================================================
+# PRODUTOS DO HOSPITAL
+# ======================================================
 @bp.route("/hospitais/<int:hospital_id>/produtos", methods=["GET", "POST"])
 def produtos_hospital(hospital_id):
-    from app.models import Hospital, ProdutoHospital
-
     hospital = Hospital.query.get_or_404(hospital_id)
 
     if request.method == "POST":
-        produto = ProdutoHospital(
+        produto = (request.form.get("produto") or "").strip()
+        quantidade = request.form.get("quantidade") or "0"
+
+        if not produto:
+            flash("Informe o produto.", "error")
+            return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+
+        try:
+            qtd = int(quantidade)
+        except ValueError:
+            qtd = 0
+
+        ph = ProdutoHospital(
             hospital_id=hospital_id,
             nome_hospital=hospital.nome_hospital,
             marca_planilha=request.form.get("marca_planilha"),
-            produto=request.form.get("produto"),
-            quantidade=int(request.form.get("quantidade") or 0),
+            produto=produto,
+            quantidade=qtd,
         )
-        db.session.add(produto)
+        db.session.add(ph)
         db.session.commit()
-        flash("Produto adicionado!", "success")
+        flash("Produto salvo!", "success")
         return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
     produtos_db = ProdutoHospital.query.filter_by(hospital_id=hospital_id).order_by(ProdutoHospital.produto.asc()).all()
-    return render_template("produtos_hospital.html", hospital=hospital, produtos=produtos_db)
+    return render_template("produtos_hospitais.html", hospital=hospital, produtos=produtos_db)
 
 
-@bp.route("/hospitais/<int:hospital_id>/relatorio")
-def relatorio(hospital_id):
-    from app.models import Hospital, Contato, DadosHospital, ProdutoHospital
+# ======================================================
+# RELATÓRIOS (TELA)
+# ======================================================
+@bp.route("/hospitais/<int:hospital_id>/relatorios", methods=["GET"])
+def relatorios(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+    contatos_db = Contato.query.filter_by(hospital_id=hospital_id).all()
+    dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
+    produtos_db = ProdutoHospital.query.filter_by(hospital_id=hospital_id).all()
+    return render_template(
+        "relatorios.html",
+        hospital=hospital,
+        contatos=contatos_db,
+        dados=dados,
+        produtos=produtos_db,
+    )
+
+
+# ======================================================
+# RELATÓRIO PDF
+# ======================================================
+@bp.route("/hospitais/<int:hospital_id>/relatorios/pdf", methods=["GET"])
+def relatorio_pdf(hospital_id):
+    if build_hospital_report_pdf is None:
+        flash("Função de PDF não disponível (pdf_report.py).", "error")
+        return redirect(url_for("main.relatorios", hospital_id=hospital_id))
 
     hospital = Hospital.query.get_or_404(hospital_id)
-    contatos = Contato.query.filter_by(hospital_id=hospital_id).all()
+    contatos_db = Contato.query.filter_by(hospital_id=hospital_id).all()
     dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
-    produtos = ProdutoHospital.query.filter_by(hospital_id=hospital_id).all()
+    produtos_db = ProdutoHospital.query.filter_by(hospital_id=hospital_id).all()
 
-    return render_template("relatorio_view.html", hospital=hospital, contatos=contatos, dados=dados, produtos=produtos)
+    pdf_bytes = build_hospital_report_pdf(hospital, contatos_db, dados, produtos_db)
+
+    return send_file(
+        io.BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"relatorio_hospital_{hospital_id}.pdf"
+    )
