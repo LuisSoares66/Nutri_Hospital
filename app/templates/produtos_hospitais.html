@@ -55,6 +55,9 @@
 
         <div class="row" style="grid-column:1/-1">
           <button class="btn" type="submit">Adicionar ao hospital</button>
+          <a class="btn secondary"   href="{{ url_for('main.importar_produtos_excel', hospital_id=hospital.id) }}">   Importar PRODUTOS (Excel)
+          </a>
+
         </div>
       </form>
       {% endif %}

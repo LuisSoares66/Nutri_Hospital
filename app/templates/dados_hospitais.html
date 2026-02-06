@@ -18,6 +18,7 @@
       </select>
       <button class="btn secondary" type="submit">Carregar</button>
       <a class="btn secondary" href="{{ url_for('main.dados_hospitais') }}">Adicionar novo (escolher hospital)</a>
+      <a class="btn secondary"   href="{{ url_for('main.importar_contatos_excel', hospital_id=hospital.id) }}">   Importar CONTATOS (Excel)</a>
     </form>
   </div>
 
