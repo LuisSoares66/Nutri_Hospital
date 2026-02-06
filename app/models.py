@@ -1,4 +1,13 @@
+from datetime import datetime
 from . import db
+
+
+class AppMeta(db.Model):
+    __tablename__ = "app_meta"
+
+    key = db.Column(db.String(80), primary_key=True)
+    value = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Hospital(db.Model):
@@ -45,7 +54,7 @@ class Contato(db.Model):
 
     hospital_id = db.Column(
         db.Integer,
-        db.ForeignKey("hospitais.id"),
+        db.ForeignKey("hospitais.id", ondelete="SET NULL"),
         nullable=True
     )
 
@@ -65,7 +74,7 @@ class DadosHospital(db.Model):
 
     hospital_id = db.Column(
         db.Integer,
-        db.ForeignKey("hospitais.id"),
+        db.ForeignKey("hospitais.id", ondelete="CASCADE"),
         nullable=False,
         unique=True
     )
@@ -121,7 +130,7 @@ class ProdutoHospital(db.Model):
 
     hospital_id = db.Column(
         db.Integer,
-        db.ForeignKey("hospitais.id"),
+        db.ForeignKey("hospitais.id", ondelete="CASCADE"),
         nullable=False
     )
 
@@ -145,14 +154,3 @@ class ProdutoHospital(db.Model):
 
     def __repr__(self):
         return f"<ProdutoHospital {self.produto} ({self.quantidade})>"
-    
-from datetime import datetime
-from app import db
-
-class AppMeta(db.Model):
-    __tablename__ = "app_meta"
-
-    key = db.Column(db.String(80), primary_key=True)
-    value = db.Column(db.String(255), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
