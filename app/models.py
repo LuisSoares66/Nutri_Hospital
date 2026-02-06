@@ -15,6 +15,7 @@ class Hospital(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)  # id_hospital
     nome_hospital = db.Column(db.String(255), nullable=False)
+
     endereco = db.Column(db.String(255))
     numero = db.Column(db.String(50))
     complemento = db.Column(db.String(120))
@@ -26,21 +27,24 @@ class Hospital(db.Model):
         "Contato",
         backref="hospital",
         lazy=True,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     dados = db.relationship(
         "DadosHospital",
         backref="hospital",
         uselist=False,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     produtos = db.relationship(
         "ProdutoHospital",
         backref="hospital",
         lazy=True,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     def __repr__(self):

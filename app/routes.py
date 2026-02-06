@@ -26,7 +26,7 @@ from .pdf_report import build_hospital_report_pdf
 bp = Blueprint("main", __name__)
 
 
-def _data_dir():
+def _data_dir() -> str:
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 
 
@@ -54,14 +54,18 @@ def hospitais():
 def novo_hospital():
     if request.method == "POST":
         hospital = Hospital(
-            nome_hospital=request.form.get("nome_hospital"),
-            endereco=request.form.get("endereco"),
-            numero=request.form.get("numero"),
-            complemento=request.form.get("complemento"),
-            cep=request.form.get("cep"),
-            cidade=request.form.get("cidade"),
-            estado=request.form.get("estado"),
+            nome_hospital=(request.form.get("nome_hospital") or "").strip(),
+            endereco=(request.form.get("endereco") or "").strip(),
+            numero=(request.form.get("numero") or "").strip(),
+            complemento=(request.form.get("complemento") or "").strip(),
+            cep=(request.form.get("cep") or "").strip(),
+            cidade=(request.form.get("cidade") or "").strip(),
+            estado=(request.form.get("estado") or "").strip(),
         )
+        if not hospital.nome_hospital:
+            flash("Nome do hospital é obrigatório.", "error")
+            return redirect(url_for("main.novo_hospital"))
+
         db.session.add(hospital)
         db.session.commit()
         flash("Hospital cadastrado com sucesso!", "success")
@@ -75,13 +79,18 @@ def editar_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
     if request.method == "POST":
-        hospital.nome_hospital = request.form.get("nome_hospital")
-        hospital.endereco = request.form.get("endereco")
-        hospital.numero = request.form.get("numero")
-        hospital.complemento = request.form.get("complemento")
-        hospital.cep = request.form.get("cep")
-        hospital.cidade = request.form.get("cidade")
-        hospital.estado = request.form.get("estado")
+        hospital.nome_hospital = (request.form.get("nome_hospital") or "").strip()
+        hospital.endereco = (request.form.get("endereco") or "").strip()
+        hospital.numero = (request.form.get("numero") or "").strip()
+        hospital.complemento = (request.form.get("complemento") or "").strip()
+        hospital.cep = (request.form.get("cep") or "").strip()
+        hospital.cidade = (request.form.get("cidade") or "").strip()
+        hospital.estado = (request.form.get("estado") or "").strip()
+
+        if not hospital.nome_hospital:
+            flash("Nome do hospital é obrigatório.", "error")
+            return redirect(url_for("main.editar_hospital", hospital_id=hospital_id))
+
         db.session.commit()
         flash("Hospital atualizado!", "success")
         return redirect(url_for("main.hospitais"))
@@ -97,19 +106,21 @@ def contatos(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
     if request.method == "POST":
-        nome_contato = (request.form.get("nome_contato") or "").strip()
-        if nome_contato:
-            c = Contato(
-                hospital_id=hospital_id,
-                hospital_nome=hospital.nome_hospital,
-                nome_contato=nome_contato,
-                cargo=request.form.get("cargo"),
-                telefone=request.form.get("telefone"),
-            )
-            db.session.add(c)
-            db.session.commit()
-            flash("Contato salvo!", "success")
+        nome = (request.form.get("nome_contato") or "").strip()
+        if not nome:
+            flash("Nome do contato é obrigatório.", "error")
+            return redirect(url_for("main.contatos", hospital_id=hospital_id))
 
+        c = Contato(
+            hospital_id=hospital_id,
+            hospital_nome=hospital.nome_hospital,
+            nome_contato=nome,
+            cargo=(request.form.get("cargo") or "").strip(),
+            telefone=(request.form.get("telefone") or "").strip(),
+        )
+        db.session.add(c)
+        db.session.commit()
+        flash("Contato salvo!", "success")
         return redirect(url_for("main.contatos", hospital_id=hospital_id))
 
     contatos_db = Contato.query.filter_by(hospital_id=hospital_id).all()
@@ -117,7 +128,7 @@ def contatos(hospital_id):
 
 
 # ======================================================
-# DADOS HOSPITAL
+# DADOS DO HOSPITAL
 # ======================================================
 @bp.route("/hospitais/<int:hospital_id>/dados", methods=["GET", "POST"])
 def dados_hospital(hospital_id):
@@ -129,7 +140,7 @@ def dados_hospital(hospital_id):
             dados = DadosHospital(hospital_id=hospital_id)
             db.session.add(dados)
 
-        # Campos básicos (você pode adicionar todos do seu form)
+        # Campos mínimos (seu template pode ter mais, você amplia depois)
         dados.especialidade = request.form.get("especialidade")
         dados.leitos = request.form.get("leitos")
         dados.leitos_uti = request.form.get("leitos_uti")
@@ -143,7 +154,7 @@ def dados_hospital(hospital_id):
 
 
 # ======================================================
-# PRODUTOS HOSPITAL
+# PRODUTOS DO HOSPITAL
 # ======================================================
 @bp.route("/hospitais/<int:hospital_id>/produtos", methods=["GET", "POST"])
 def produtos_hospital(hospital_id):
@@ -151,25 +162,31 @@ def produtos_hospital(hospital_id):
 
     if request.method == "POST":
         produto = (request.form.get("produto") or "").strip()
-        if produto:
-            try:
-                qtd = int(request.form.get("quantidade") or 0)
-            except ValueError:
-                qtd = 0
+        if not produto:
+            flash("Produto é obrigatório.", "error")
+            return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
-            existe = ProdutoHospital.query.filter_by(hospital_id=hospital_id, produto=produto).first()
-            if not existe:
-                db.session.add(
-                    ProdutoHospital(
-                        hospital_id=hospital_id,
-                        nome_hospital=hospital.nome_hospital,
-                        produto=produto,
-                        quantidade=qtd,
-                    )
-                )
-                db.session.commit()
-                flash("Produto adicionado!", "success")
+        qtd_raw = (request.form.get("quantidade") or "0").strip()
+        try:
+            qtd = int(float(qtd_raw.replace(",", ".")))
+        except ValueError:
+            qtd = 0
 
+        existe = ProdutoHospital.query.filter_by(hospital_id=hospital_id, produto=produto).first()
+        if existe:
+            flash("Este produto já existe para este hospital.", "error")
+            return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+
+        db.session.add(
+            ProdutoHospital(
+                hospital_id=hospital_id,
+                nome_hospital=hospital.nome_hospital,
+                produto=produto,
+                quantidade=qtd,
+            )
+        )
+        db.session.commit()
+        flash("Produto adicionado!", "success")
         return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
     produtos_db = ProdutoHospital.query.filter_by(hospital_id=hospital_id).all()
@@ -213,7 +230,7 @@ def relatorio_pdf(hospital_id):
 
 
 # ======================================================
-# IMPORTAR TUDO DO EXCEL — APENAS UMA VEZ (ADMIN)
+# IMPORTAR EXCEL — APENAS UMA VEZ (ADMIN)
 # URL: /admin/importar_excel_uma_vez
 # ======================================================
 @bp.route("/admin/importar_excel_uma_vez", methods=["GET"])
@@ -232,21 +249,32 @@ def importar_excel_uma_vez():
         nome = (r.get("nome_hospital") or "").strip()
         if not nome:
             continue
+
+        # evita duplicar por nome
         existe = Hospital.query.filter_by(nome_hospital=nome).first()
         if existe:
             continue
-        db.session.add(Hospital(
+
+        h = Hospital(
             nome_hospital=nome,
-            endereco=r.get("endereco") or "",
-            numero=str(r.get("numero") or ""),
-            complemento=r.get("complemento") or "",
-            cep=str(r.get("cep") or ""),
-            cidade=r.get("cidade") or "",
-            estado=r.get("estado") or "",
-        ))
+            endereco=(r.get("endereco") or "").strip(),
+            numero=str(r.get("numero") or "").strip(),
+            complemento=(r.get("complemento") or "").strip(),
+            cep=str(r.get("cep") or "").strip(),
+            cidade=(r.get("cidade") or "").strip(),
+            estado=(r.get("estado") or "").strip(),
+        )
+
+        # se o excel tiver id_hospital numérico, mantém id
+        raw_id = str(r.get("id_hospital") or "").strip()
+        if raw_id.isdigit():
+            h.id = int(raw_id)
+
+        db.session.add(h)
+
     db.session.commit()
 
-    # 2) Contatos (associa se id_hospital existir no Excel; se não, salva sem associação)
+    # 2) Contatos (pode existir sem associação)
     cont_rows = load_contatos_from_excel(data_dir)
     for r in cont_rows:
         nome_contato = (r.get("nome_contato") or "").strip()
@@ -257,6 +285,8 @@ def importar_excel_uma_vez():
         hospital_id = int(raw_hid) if raw_hid.isdigit() else None
 
         telefone = (r.get("telefone") or "").strip()
+
+        # evita duplicação simples
         existe = Contato.query.filter_by(
             hospital_id=hospital_id,
             nome_contato=nome_contato,
@@ -272,9 +302,10 @@ def importar_excel_uma_vez():
             cargo=(r.get("cargo") or "").strip(),
             telefone=telefone,
         ))
+
     db.session.commit()
 
-    # 3) Dados hospitais (por id_hospital)
+    # 3) Dados Hospital
     dados_rows = load_dados_hospitais_from_excel(data_dir)
     for r in dados_rows:
         raw_hid = str(r.get("id_hospital") or "").strip()
@@ -299,7 +330,7 @@ def importar_excel_uma_vez():
 
     db.session.commit()
 
-    # 4) Produtos hospitais (por hospital_id ou id_hospital)
+    # 4) Produtos Hospital
     prod_rows = load_produtos_hospitais_from_excel(data_dir)
     for r in prod_rows:
         raw_hid = str(r.get("hospital_id") or r.get("id_hospital") or "").strip()
@@ -324,14 +355,14 @@ def importar_excel_uma_vez():
         db.session.add(ProdutoHospital(
             hospital_id=hid,
             nome_hospital=(r.get("nome_hospital") or "").strip(),
+            marca_planilha=(r.get("marca_planilha") or "").strip(),
             produto=produto,
             quantidade=qtd,
-            marca_planilha=(r.get("marca_planilha") or "").strip(),
         ))
 
     db.session.commit()
 
-    # grava a flag (trava definitiva)
+    # grava flag para travar de vez
     if not flag:
         flag = AppMeta(key="excel_import_done", value="1")
         db.session.add(flag)
