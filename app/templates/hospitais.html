@@ -37,6 +37,13 @@
               <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">PRODUTOS</a>
 
               <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=h.id) }}">RELATÓRIOS</a>
+              <a class="btn danger"
+                href="{{ url_for('main.importar_tudo', hospital_id=h.id) }}"
+                onclick="return confirm('IMPORTAR TUDO DO EXCEL para este hospital?')">
+                IMPORTAR TUDO (ADMIN)
+              </a>
+
+
             </td>
           </tr>
         {% endfor %}
