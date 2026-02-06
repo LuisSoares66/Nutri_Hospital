@@ -4,7 +4,20 @@
 <div class="container">
   <div class="header-row">
     <h1>Hospitais</h1>
-    <a class="btn primary" href="{{ url_for('main.novo_hospital') }}">+ Novo Hospital</a>
+    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px;">
+
+    <a class="btn primary" href="{{ url_for('main.novo_hospital') }}">
+        + Novo Hospital
+    </a>
+
+    <a class="btn danger"
+       href="{{ url_for('main.importar_excel_uma_vez') }}"
+       onclick="return confirm('Importar TODOS os dados do Excel? Esta ação só pode ser feita UMA VEZ.')">
+        📥 Importar Excel (Admin)
+    </a>
+
+</div>
+
   </div>
 
   {% if hospitais|length == 0 %}
@@ -38,10 +51,11 @@
 
               <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=h.id) }}">RELATÓRIOS</a>
               <a class="btn danger"
-                href="{{ url_for('main.importar_tudo', hospital_id=h.id) }}"
-                onclick="return confirm('IMPORTAR TUDO DO EXCEL para este hospital?')">
-                IMPORTAR TUDO (ADMIN)
+                href="{{ url_for('main.importar_excel_uma_vez') }}"
+                onclick="return confirm('Importar TODOS os dados do Excel (apenas 1 vez)?')">
+                IMPORTAR TUDO (ADMIN - UMA VEZ)
               </a>
+
 
 
             </td>
