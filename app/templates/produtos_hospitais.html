@@ -10,10 +10,8 @@
       Importar PRODUTOS (Excel)
     </a>
 
-    <a class="btn primary"
-       href="{{ url_for('main.hospitais') }}">
-      Voltar
-    </a>
+    <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">⬅ Voltar</a>
+
   </div>
 
   <hr>
