@@ -1,26 +1,9 @@
 import os
 
-
 class Config:
-    # ======================================================
-    # CONFIGURAÇÕES BÁSICAS
-    # ======================================================
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
-
-    # ======================================================
-    # BANCO DE DADOS (Render / PostgreSQL)
-    # ======================================================
-    DATABASE_URL = os.environ.get("DATABASE_URL")
-
-    if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL or "sqlite:///local.db"
-
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev")
 
-    # ======================================================
-    # FLASK
-    # ======================================================
-    TEMPLATES_AUTO_RELOAD = True
-
+    ADMIN_USER = os.environ.get("ADMIN_USER", "luis")
+    ADMIN_PASS = os.environ.get("ADMIN_PASS", "8mVS1v8dUxzZkWGm35ag2hYU5V5Ixfy0")
