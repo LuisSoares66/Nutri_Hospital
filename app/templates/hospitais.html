@@ -34,33 +34,20 @@
         </tr>
       </thead>
       <tbody>
-        {% for h in hospitais %}
-          <tr>
-            <td>{{ h.id }}</td>
-            <td>{{ h.nome_hospital }}</td>
-            <td>{{ h.cidade or "" }}</td>
-            <td>{{ h.estado or "" }}</td>
-            <td class="actions">
-              <a class="btn secondary" href="{{ url_for('main.editar_hospital', hospital_id=h.id) }}">Editar</a>
+          {% for h in hospitais %}
+            <tr>
+              <td>{{ h.id }}</td>
+              <td>{{ h.nome_hospital }}</td>
 
-              <a class="btn secondary" href="{{ url_for('main.contatos', hospital_id=h.id) }}">CONTATOS</a>
+              <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a class="btn secondary" href="{{ url_for('main.contatos', hospital_id=h.id) }}">CONTATOS</a>
+                <a class="btn secondary" href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">DADOS</a>
+                <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">PRODUTOS</a>
+                <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=h.id) }}">RELATÓRIOS</a>
+              </td>
+            </tr>
+          {% endfor %}
 
-              <a class="btn secondary" href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">DADOS</a>
-
-              <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">PRODUTOS</a>
-
-              <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=h.id) }}">RELATÓRIOS</a>
-              <a class="btn danger"
-                href="{{ url_for('main.importar_excel_uma_vez') }}"
-                onclick="return confirm('Importar TODOS os dados do Excel (apenas 1 vez)?')">
-                IMPORTAR TUDO (ADMIN - UMA VEZ)
-              </a>
-
-
-
-            </td>
-          </tr>
-        {% endfor %}
       </tbody>
     </table>
   {% endif %}
