@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from . import db
 from .models import Hospital, Contato, DadosHospital, ProdutoHospital
+from .excel_loader import load_hospitais_from_excel
+import os
+import io
 
 # Se você tiver o pdf_report.py
 try:
