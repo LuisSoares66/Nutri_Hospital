@@ -245,6 +245,10 @@ def importar_excel_uma_vez():
 
     # 1) Hospitais
     hosp_rows = load_hospitais_from_excel(data_dir)
+    # blindagem: se vier algo errado do loader, tenta normalizar
+    if hosp_rows and isinstance(hosp_rows[0], str):
+        return "Erro: hospitais.xlsx foi lido em formato inválido. Verifique o excel_loader.py.", 500
+
     for r in hosp_rows:
         nome = (r.get("nome_hospital") or "").strip()
         if not nome:
