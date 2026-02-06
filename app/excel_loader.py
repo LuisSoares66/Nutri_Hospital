@@ -1,56 +1,48 @@
 import os
 import pandas as pd
 
+
 def _path(data_dir: str, filename: str) -> str:
     return os.path.join(data_dir, filename)
 
-def load_hospitais_from_excel(data_dir: str):
-    fp = _path(data_dir, "hospitais.xlsx")
+
+def _read_excel(fp: str, sheet_name=None):
     if not os.path.exists(fp):
         return []
-    df = pd.read_excel(fp, engine="openpyxl")
+    df = pd.read_excel(fp, engine="openpyxl", sheet_name=sheet_name)
+    # quando sheet_name=None, retorna dict de DataFrames (um por planilha)
+    if isinstance(df, dict):
+        for k in df:
+            df[k] = df[k].fillna("")
+        return {k: v.to_dict(orient="records") for k, v in df.items()}
     df = df.fillna("")
-    # colunas esperadas:
-    # id_hospital, nome_hospital, endereco, numero, complemento, cep, cidade, estado
     return df.to_dict(orient="records")
+
+
+def load_hospitais_from_excel(data_dir: str):
+    fp = _path(data_dir, "hospitais.xlsx")
+    return _read_excel(fp)
+
 
 def load_contatos_from_excel(data_dir: str):
     fp = _path(data_dir, "contatos.xlsx")
-    if not os.path.exists(fp):
-        return []
-    df = pd.read_excel(fp, engine="openpyxl")
-    df = df.fillna("")
-    return df.to_dict(orient="records")
+    return _read_excel(fp)
+
 
 def load_dados_hospitais_from_excel(data_dir: str):
     fp = _path(data_dir, "dadoshospitais.xlsx")
-    if not os.path.exists(fp):
-        return []
-    df = pd.read_excel(fp, engine="openpyxl")
-    df = df.fillna("")
-    return df.to_dict(orient="records")
+    return _read_excel(fp)
+
 
 def load_produtos_hospitais_from_excel(data_dir: str):
     fp = _path(data_dir, "produtoshospitais.xlsx")
-    if not os.path.exists(fp):
-        return []
-    df = pd.read_excel(fp, engine="openpyxl")
-    df = df.fillna("")
-    return df.to_dict(orient="records")
+    return _read_excel(fp)
 
-def load_catalogo_produtos(data_dir: str):
+
+def load_produtos_catalogo_from_excel(data_dir: str):
     """
-    Lê produtos.xlsx com as planilhas:
-    PRODIET, NESTLÉ, DANONE, FRESENIUS
-    Retorna dict: { "PRODIET": [ {Produto, Embalagem,...}, ... ], ... }
+    Lê produtos.xlsx que tem várias planilhas (PRODIET, NESTLÉ, DANONE, FRESENIUS)
+    Retorna dict {nome_planilha: [rows]}
     """
     fp = _path(data_dir, "produtos.xlsx")
-    if not os.path.exists(fp):
-        return {}
-
-    xls = pd.ExcelFile(fp, engine="openpyxl")
-    catalogo = {}
-    for sheet in xls.sheet_names:
-        df = pd.read_excel(fp, sheet_name=sheet, engine="openpyxl").fillna("")
-        catalogo[sheet] = df.to_dict(orient="records")
-    return catalogo
+    return _read_excel(fp, sheet_name=None)

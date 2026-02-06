@@ -1,4 +1,4 @@
-from app import db
+from . import db
 
 
 class Hospital(db.Model):
@@ -145,3 +145,14 @@ class ProdutoHospital(db.Model):
 
     def __repr__(self):
         return f"<ProdutoHospital {self.produto} ({self.quantidade})>"
+    
+from datetime import datetime
+from app import db
+
+class AppMeta(db.Model):
+    __tablename__ = "app_meta"
+
+    key = db.Column(db.String(80), primary_key=True)
+    value = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
