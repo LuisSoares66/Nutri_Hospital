@@ -5,17 +5,12 @@
   <h1>Dados do Hospital – {{ hospital.nome_hospital }}</h1>
 
   <div class="actions">
-    <a class="btn secondary"
-       href="{{ url_for('main.importar_dados_excel', hospital_id=hospital.id) }}">
-      Importar DADOS (Excel)
-    </a>
-
-    <a class="btn secondary"
-   href="{{ url_for('main.hospitais') }}">
-   ⬅ Voltar
-    </a>
-
-
+    <div style="margin-top: 20px;">
+        <a class="btn secondary"
+          href="{{ url_for('main.hospitais') }}">
+            ⬅ Voltar
+        </a>
+    </div>
   </div>
 
   <hr>
