@@ -6,34 +6,18 @@
   <h1>Hospitais</h1>
 
   <!-- AÇÕES PRINCIPAIS -->
-  <div class="actions" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+  <div class="actions"
+       style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
 
-  <td style="display:flex; gap:6px; flex-wrap:wrap;">
-
-    <a class="btn secondary"
-      href="{{ url_for('main.contatos', hospital_id=h.id) }}">
-      CONTATOS
-    </a>
-
-    <a class="btn secondary"
-      href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">
-      DADOS
-    </a>
-
-    <a class="btn secondary"
-      href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">
-      PRODUTOS
-    </a>
-
-    <a class="btn secondary"
-      href="{{ url_for('main.relatorios', hospital_id=h.id) }}">
-      RELATÓRIOS
+    <!-- NOVO HOSPITAL -->
+    <a class="btn primary" href="{{ url_for('main.novo_hospital') }}">
+      + Novo Hospital
     </a>
 
     <!-- IMPORTAR EXCEL (UMA VEZ) -->
     <form method="POST"
           action="{{ url_for('main.importar_excel_uma_vez') }}"
-          onsubmit="return confirm('Importar dados do Excel apenas UMA vez?');">
+          onsubmit="return confirm('Deseja importar os dados do Excel? Essa ação deve ser feita apenas UMA vez.');">
       <button class="btn secondary" type="submit">
         ⬆ Importar Excel
       </button>
@@ -42,7 +26,7 @@
     <!-- ZERAR BANCO (ADMIN + SENHA) -->
     <form method="POST"
           action="{{ url_for('main.reset_db') }}"
-          onsubmit="return confirm('TEM CERTEZA? Isso apaga TODOS os dados do banco!');"
+          onsubmit="return confirm('TEM CERTEZA? Isso apagará TODOS os dados do banco!');"
           style="display:flex; gap:8px; align-items:center;">
 
       <input type="password"
@@ -60,17 +44,6 @@
       </button>
     </form>
 
-    <form method="POST"
-          action="{{ url_for('main.apagar_hospital', hospital_id=h.id) }}"
-          onsubmit="return confirm('Tem certeza que deseja APAGAR este hospital e TODOS os dados relacionados?');"
-          style="display:inline;">
-      <button class="btn danger" type="submit">
-        🗑 APAGAR
-      </button>
-    </form>
-
-
-
   </div>
 
   <!-- LISTA DE HOSPITAIS -->
@@ -84,11 +57,14 @@
         </tr>
       </thead>
       <tbody>
+
         {% for h in hospitais %}
           <tr>
             <td>{{ h.id }}</td>
             <td>{{ h.nome_hospital }}</td>
+
             <td style="display:flex; gap:6px; flex-wrap:wrap;">
+
               <a class="btn secondary"
                  href="{{ url_for('main.contatos', hospital_id=h.id) }}">
                  CONTATOS
@@ -108,9 +84,21 @@
                  href="{{ url_for('main.relatorios', hospital_id=h.id) }}">
                  RELATÓRIOS
               </a>
+
+              <!-- APAGAR HOSPITAL -->
+              <form method="POST"
+                    action="{{ url_for('main.apagar_hospital', hospital_id=h.id) }}"
+                    onsubmit="return confirm('Tem certeza que deseja APAGAR este hospital e TODOS os dados relacionados?');"
+                    style="display:inline;">
+                <button class="btn danger" type="submit">
+                  🗑 APAGAR
+                </button>
+              </form>
+
             </td>
           </tr>
         {% endfor %}
+
       </tbody>
     </table>
   {% else %}
