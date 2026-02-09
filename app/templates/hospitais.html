@@ -8,8 +8,26 @@
   <!-- AÇÕES PRINCIPAIS -->
   <div class="actions" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
 
-    <a class="btn primary" href="{{ url_for('main.novo_hospital') }}">
-      + Novo Hospital
+  <td style="display:flex; gap:6px; flex-wrap:wrap;">
+
+    <a class="btn secondary"
+      href="{{ url_for('main.contatos', hospital_id=h.id) }}">
+      CONTATOS
+    </a>
+
+    <a class="btn secondary"
+      href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">
+      DADOS
+    </a>
+
+    <a class="btn secondary"
+      href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">
+      PRODUTOS
+    </a>
+
+    <a class="btn secondary"
+      href="{{ url_for('main.relatorios', hospital_id=h.id) }}">
+      RELATÓRIOS
     </a>
 
     <!-- IMPORTAR EXCEL (UMA VEZ) -->
@@ -41,6 +59,17 @@
         🧨 Zerar Banco
       </button>
     </form>
+
+    <form method="POST"
+          action="{{ url_for('main.apagar_hospital', hospital_id=h.id) }}"
+          onsubmit="return confirm('Tem certeza que deseja APAGAR este hospital e TODOS os dados relacionados?');"
+          style="display:inline;">
+      <button class="btn danger" type="submit">
+        🗑 APAGAR
+      </button>
+    </form>
+
+
 
   </div>
 
