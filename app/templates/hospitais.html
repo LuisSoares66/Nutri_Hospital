@@ -14,35 +14,10 @@
       + Novo Hospital
     </a>
 
-    <!-- IMPORTAR EXCEL (UMA VEZ) -->
-    <form method="POST"
-          action="{{ url_for('main.importar_excel_uma_vez') }}"
-          onsubmit="return confirm('Deseja importar os dados do Excel? Essa ação deve ser feita apenas UMA vez.');">
-      <button class="btn secondary" type="submit">
-        ⬆ Importar Excel
-      </button>
-    </form>
-
-    <!-- ZERAR BANCO (ADMIN + SENHA) -->
-    <form method="POST"
-          action="{{ url_for('main.reset_db') }}"
-          onsubmit="return confirm('TEM CERTEZA? Isso apagará TODOS os dados do banco!');"
-          style="display:flex; gap:8px; align-items:center;">
-
-      <input type="password"
-             name="reset_password"
-             placeholder="Senha reset"
-             required>
-
-      <input type="text"
-             name="confirm_text"
-             placeholder="Digite APAGAR"
-             required>
-
-      <button class="btn danger" type="submit">
-        🧨 Zerar Banco
-      </button>
-    </form>
+    <!-- ÁREA ADMIN (PROTEGIDA) -->
+    <a class="btn secondary" href="{{ url_for('main.admin_panel') }}">
+      🔒 Admin
+    </a>
 
   </div>
 
