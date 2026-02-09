@@ -263,3 +263,8 @@ def reset_db():
 
     flash("Banco zerado com sucesso.", "success")
     return redirect(url_for("main.hospitais"))
+
+@bp.route("/admin", methods=["GET"])
+@admin_required
+def admin_panel():
+    return render_template("admin.html")
