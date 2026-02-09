@@ -8,8 +8,8 @@ def admin_required(f):
         auth = request.authorization
 
         user = current_app.config.get("ADMIN_USER", "admin")
-        password = current_app.config.get("ADMIN_PASS", "FeYp4eYepXq8LK5mzHY5WybxLvtNwB9w")
-
+        password = current_app.config.get("ADMIN_PASS", "Cida1383Anna11")
+        #password = current_app.config.get("ADMIN_PASS", "FeYp4eYepXq8LK5mzHY5WybxLvtNwB9w")
         if not auth or auth.username != user or auth.password != password:
             return Response(
                 "Acesso restrito",
