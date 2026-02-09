@@ -2,54 +2,91 @@
 
 {% block content %}
 <div class="container">
-  <div class="header-row">
-    <h1>Hospitais</h1>
-    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px;">
+
+  <h1>Hospitais</h1>
+
+  <!-- AÇÕES PRINCIPAIS -->
+  <div class="actions" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
 
     <a class="btn primary" href="{{ url_for('main.novo_hospital') }}">
-        + Novo Hospital
+      + Novo Hospital
     </a>
 
-    <a class="btn danger"
-       href="{{ url_for('main.importar_excel_uma_vez') }}"
-       onclick="return confirm('Importar TODOS os dados do Excel? Esta ação só pode ser feita UMA VEZ.')">
-        📥 Importar Excel (Admin)
-    </a>
+    <!-- IMPORTAR EXCEL (UMA VEZ) -->
+    <form method="POST"
+          action="{{ url_for('main.importar_excel_uma_vez') }}"
+          onsubmit="return confirm('Importar dados do Excel apenas UMA vez?');">
+      <button class="btn secondary" type="submit">
+        ⬆ Importar Excel
+      </button>
+    </form>
 
-</div>
+    <!-- ZERAR BANCO (ADMIN + SENHA) -->
+    <form method="POST"
+          action="{{ url_for('main.reset_db') }}"
+          onsubmit="return confirm('TEM CERTEZA? Isso apaga TODOS os dados do banco!');"
+          style="display:flex; gap:8px; align-items:center;">
+
+      <input type="password"
+             name="reset_password"
+             placeholder="Senha reset"
+             required>
+
+      <input type="text"
+             name="confirm_text"
+             placeholder="Digite APAGAR"
+             required>
+
+      <button class="btn danger" type="submit">
+        🧨 Zerar Banco
+      </button>
+    </form>
 
   </div>
 
-  {% if hospitais|length == 0 %}
-    <p>Nenhum hospital cadastrado.</p>
-  {% else %}
+  <!-- LISTA DE HOSPITAIS -->
+  {% if hospitais %}
     <table class="table">
       <thead>
         <tr>
           <th>ID</th>
-          <th>Hospital</th>
-          <th>Cidade</th>
-          <th>UF</th>
-          <th style="width: 420px;">Ações</th>
+          <th>Nome do Hospital</th>
+          <th>Ações</th>
         </tr>
       </thead>
       <tbody>
-          {% for h in hospitais %}
-            <tr>
-              <td>{{ h.id }}</td>
-              <td>{{ h.nome_hospital }}</td>
+        {% for h in hospitais %}
+          <tr>
+            <td>{{ h.id }}</td>
+            <td>{{ h.nome_hospital }}</td>
+            <td style="display:flex; gap:6px; flex-wrap:wrap;">
+              <a class="btn secondary"
+                 href="{{ url_for('main.contatos', hospital_id=h.id) }}">
+                 CONTATOS
+              </a>
 
-              <td style="display:flex; gap:8px; flex-wrap:wrap;">
-                <a class="btn secondary" href="{{ url_for('main.contatos', hospital_id=h.id) }}">CONTATOS</a>
-                <a class="btn secondary" href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">DADOS</a>
-                <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">PRODUTOS</a>
-                <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=h.id) }}">RELATÓRIOS</a>
-              </td>
-            </tr>
-          {% endfor %}
+              <a class="btn secondary"
+                 href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">
+                 DADOS
+              </a>
 
+              <a class="btn secondary"
+                 href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">
+                 PRODUTOS
+              </a>
+
+              <a class="btn secondary"
+                 href="{{ url_for('main.relatorios', hospital_id=h.id) }}">
+                 RELATÓRIOS
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
+  {% else %}
+    <p>Nenhum hospital cadastrado.</p>
   {% endif %}
+
 </div>
 {% endblock %}
