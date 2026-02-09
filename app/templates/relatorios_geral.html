@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+
+  <h1>Relatórios</h1>
+
+  <div class="actions" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+  </div>
+
+  <p>Selecione um hospital na lista (rola) e escolha o formato.</p>
+
+  <form id="formRel" method="POST" action="{{ url_for('main.relatorio_csv') }}"
+        style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+
+    <div style="min-width:320px;">
+      <label><b>Hospitais</b></label><br>
+      <select name="hospital_id" size="12" required style="width: 340px; max-width:100%; overflow:auto;">
+        {% for h in hospitais %}
+          <option value="{{ h.id }}">{{ h.nome_hospital }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn primary" type="submit">
+        ⬇ Exportar CSV
+      </button>
+
+      <!-- PDF: troca o action dinamicamente pra chamar /hospitais/<id>/relatorios/pdf -->
+      <button class="btn secondary" type="button" onclick="baixarPDF()">
+        ⬇ Baixar PDF
+      </button>
+    </div>
+  </form>
+
+</div>
+
+<script>
+function baixarPDF(){
+  const sel = document.querySelector('select[name="hospital_id"]');
+  const id = sel && sel.value;
+  if(!id){ alert("Selecione um hospital."); return; }
+  window.location.href = `/hospitais/${id}/relatorios/pdf`;
+}
+</script>
+{% endblock %}
