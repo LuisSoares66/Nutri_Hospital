@@ -449,3 +449,19 @@ def reset_db():
 
     return redirect(url_for("main.hospitais"))
 
+@bp.route("/hospitais/<int:hospital_id>/apagar", methods=["POST"])
+def apagar_hospital(hospital_id):
+    from app.models import Hospital
+
+    hospital = Hospital.query.get_or_404(hospital_id)
+
+    try:
+        db.session.delete(hospital)
+        db.session.commit()
+        flash(f"Hospital '{hospital.nome_hospital}' removido com sucesso.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao apagar hospital: {e}", "error")
+
+    return redirect(url_for("main.hospitais"))
+
