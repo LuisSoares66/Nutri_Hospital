@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+
+  <h1>Admin</h1>
+  <p>Área protegida. Use com cuidado.</p>
+
+  <div style="display:flex; gap:12px; flex-wrap:wrap; margin:20px 0;">
+
+    <!-- Importar Excel (uma vez) -->
+    <form method="POST"
+          action="{{ url_for('main.importar_excel_uma_vez') }}"
+          onsubmit="return confirm('Importar TODOS os dados do Excel? (apenas uma vez)');">
+      <button class="btn secondary" type="submit">⬆ Importar Excel (uma vez)</button>
+    </form>
+
+    <!-- Zerar Banco (com senha) -->
+    <form method="POST"
+          action="{{ url_for('main.reset_db') }}"
+          onsubmit="return confirm('TEM CERTEZA? Isso apaga TODOS os dados!');"
+          style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+
+      <input type="password" name="reset_password" placeholder="Senha reset" required>
+      <input type="text" name="confirm_text" placeholder="Digite APAGAR" required>
+
+      <button class="btn danger" type="submit">🧨 Zerar Banco</button>
+    </form>
+
+  </div>
+
+  <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+
+</div>
+{% endblock %}
