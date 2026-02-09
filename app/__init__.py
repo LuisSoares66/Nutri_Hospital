@@ -1,11 +1,6 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from config import Config
-
-db = SQLAlchemy()
-migrate = Migrate()
-
+from . import db, migrate  # ou db/migrate definidos aqui
 
 def create_app():
     app = Flask(__name__)
@@ -14,16 +9,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
-    from . import models  # noqa: F401
-
-    # ✅ CRIA AS TABELAS NO BANCO (TEMPORÁRIO)
-    with app.app_context():
-        db.create_all()
-
     from .routes import bp
     app.register_blueprint(bp)
 
     return app
-
-
-
