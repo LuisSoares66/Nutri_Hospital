@@ -65,7 +65,7 @@
 
               <!-- APAGAR HOSPITAL -->
               <form method="POST"
-                    action="{{ url_for('main.apagar_hospital', hospital_id=h.id) }}"
+                    action="{{ url_for('main.excluir_hospital', hospital_id=h.id) }}"
                     onsubmit="return confirm('Tem certeza que deseja APAGAR este hospital e TODOS os dados relacionados?');"
                     style="display:inline;">
                 <button class="btn danger" type="submit">
