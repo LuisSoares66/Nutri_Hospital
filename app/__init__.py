@@ -1,6 +1,10 @@
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from config import Config
-from . import db, migrate  # ou db/migrate definidos aqui
+
+db = SQLAlchemy()
+migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
@@ -9,7 +13,10 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
-    from .routes import bp
+    # importa models depois do db existir
+    from app import models  # noqa: F401
+
+    from app.routes import bp
     app.register_blueprint(bp)
 
     return app
