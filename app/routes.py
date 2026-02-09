@@ -22,6 +22,10 @@ from .excel_loader import (
 )
 from .pdf_report import build_hospital_report_pdf
 
+from sqlalchemy import text, inspect
+
+from .models import AppMeta  # se você tiver essa tabela
+
 
 bp = Blueprint("main", __name__)
 
@@ -130,7 +134,7 @@ def contatos(hospital_id):
 # ======================================================
 # DADOS DO HOSPITAL
 # ======================================================
-@bp.route("/hospitais/<int:hospital_id>/dados", methods=["GET", "POST"])
+@bp.route("/hospitais/<int:hospital_id>/dados")#, methods=["GET", "POST"])
 def dados_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
     dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
@@ -156,7 +160,7 @@ def dados_hospital(hospital_id):
 # ======================================================
 # PRODUTOS DO HOSPITAL
 # ======================================================
-@bp.route("/hospitais/<int:hospital_id>/produtos")#, methods=["GET", "POST"])
+@bp.route("/hospitais/<int:hospital_id>/produtos", methods=["GET", "POST"])
 def produtos_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
@@ -203,12 +207,16 @@ def relatorios(hospital_id):
     dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
     produtos_db = ProdutoHospital.query.filter_by(hospital_id=hospital_id).all()
 
+    #return render_template(
+      #  "relatorios.html",
+      #  hospital=hospital,
+      #  contatos=contatos_db,
+      #  dados=dados,
+      #  produtos=produtos_db,
     return render_template(
-        "relatorios.html",
+        "dados_hospitais.html",
         hospital=hospital,
-        contatos=contatos_db,
-        dados=dados,
-        produtos=produtos_db,
+        dados=dados      
     )
 
 
@@ -227,6 +235,24 @@ def relatorio_pdf(hospital_id):
         as_attachment=True,
         download_name=f"relatorio_hospital_{hospital_id}.pdf",
     )
+
+def _find_hospital_id(row: dict):
+    # tenta por id_hospital/hospital_id
+    raw_hid = str(row.get("id_hospital") or row.get("hospital_id") or "").strip()
+    if raw_hid.isdigit():
+        hid = int(raw_hid)
+        if Hospital.query.get(hid):
+            return hid
+
+    # tenta por nome do hospital
+    nome = (row.get("nome_hospital") or row.get("hospital_nome") or "").strip()
+    if nome:
+        h = Hospital.query.filter_by(nome_hospital=nome).first()
+        if h:
+            return h.id
+
+    return None
+
 
 
 # ======================================================
@@ -312,10 +338,12 @@ def importar_excel_uma_vez():
     # 3) Dados Hospital
     dados_rows = load_dados_hospitais_from_excel(data_dir)
     for r in dados_rows:
-        raw_hid = str(r.get("id_hospital") or "").strip()
-        if not raw_hid.isdigit():
+        if not isinstance(r, dict):
             continue
-        hid = int(raw_hid)
+
+        hid = _find_hospital_id(r)
+        if not hid:
+            continue
 
         dados = DadosHospital.query.filter_by(hospital_id=hid).first()
         if not dados:
@@ -337,10 +365,12 @@ def importar_excel_uma_vez():
     # 4) Produtos Hospital
     prod_rows = load_produtos_hospitais_from_excel(data_dir)
     for r in prod_rows:
-        raw_hid = str(r.get("hospital_id") or r.get("id_hospital") or "").strip()
-        if not raw_hid.isdigit():
+        if not isinstance(r, dict):
             continue
-        hid = int(raw_hid)
+
+        hid = _find_hospital_id(r)
+        if not hid:
+            continue
 
         produto = (r.get("produto") or "").strip()
         if not produto:
@@ -375,3 +405,47 @@ def importar_excel_uma_vez():
     db.session.commit()
 
     return "IMPORTAÇÃO OK: executada uma vez e travada."
+
+
+@bp.route("/admin/reset_db", methods=["POST"])
+@admin_required
+def reset_db():
+    reset_pass = os.getenv("RESET_DB_PASSWORD", "")
+    typed = (request.form.get("reset_password") or "").strip()
+    confirm = (request.form.get("confirm_text") or "").strip().upper()
+
+    if not reset_pass:
+        flash("RESET_DB_PASSWORD não configurada no ambiente.", "error")
+        return redirect(url_for("main.hospitais"))
+
+    if typed != reset_pass:
+        flash("Senha de reset incorreta.", "error")
+        return redirect(url_for("main.hospitais"))
+
+    if confirm != "APAGAR":
+        flash("Confirmação inválida. Digite APAGAR para confirmar.", "error")
+        return redirect(url_for("main.hospitais"))
+
+    # TRUNCATE em todas as tabelas (exceto alembic_version e app_meta)
+    insp = inspect(db.engine)
+    tables = insp.get_table_names()
+
+    protected = {"alembic_version", "app_meta"}  # ajuste se quiser manter outras
+    to_truncate = [t for t in tables if t not in protected]
+
+    try:
+        with db.engine.begin() as conn:
+            for t in to_truncate:
+                conn.execute(text(f'TRUNCATE TABLE "{t}" RESTART IDENTITY CASCADE;'))
+
+        # opcional: liberar a importação "uma vez" de novo
+        AppMeta.query.filter_by(key="excel_import_done").delete()
+        db.session.commit()
+
+        flash("Banco zerado com sucesso (tabelas limpas).", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao zerar banco: {e}", "error")
+
+    return redirect(url_for("main.hospitais"))
+
