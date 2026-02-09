@@ -1,40 +1,70 @@
 {% extends "base.html" %}
-
 {% block content %}
 <div class="container">
+
   <h1>Produtos – {{ hospital.nome_hospital }}</h1>
 
-  <div class="actions">
-    <a class="btn secondary"
-       href="{{ url_for('main.importar_produtos_excel', hospital_id=hospital.id) }}">
-      Importar PRODUTOS (Excel)
+  <div class="actions" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+
+    <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">
+      📄 Relatórios
     </a>
-
-    <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">⬅ Voltar</a>
-
   </div>
 
   <hr>
 
-  {% if produtos|length == 0 %}
-    <p>Nenhum produto cadastrado.</p>
-  {% else %}
+  <h2>Adicionar produto</h2>
+  <form method="POST" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:20px;">
+
+    <div>
+      <label>Marca/Planilha</label><br>
+      <select name="marca_planilha" required>
+        <option value="">Selecione</option>
+        <option value="PRODIET">PRODIET</option>
+        <option value="NESTLÉ">NESTLÉ</option>
+        <option value="DANONE">DANONE</option>
+        <option value="FRESENIUS">FRESENIUS</option>
+      </select>
+    </div>
+
+    <div style="min-width:260px;">
+      <label>Produto</label><br>
+      <input type="text" name="produto" placeholder="Nome do produto" required>
+    </div>
+
+    <div style="width:120px;">
+      <label>Quantidade</label><br>
+      <input type="number" name="quantidade" value="0" min="0">
+    </div>
+
+    <button class="btn primary" type="submit">+ Adicionar</button>
+  </form>
+
+  <h2>Produtos cadastrados</h2>
+
+  {% if produtos and produtos|length > 0 %}
     <table class="table">
       <thead>
         <tr>
+          <th>Marca</th>
           <th>Produto</th>
           <th>Quantidade</th>
         </tr>
       </thead>
       <tbody>
         {% for p in produtos %}
-        <tr>
-          <td>{{ p.produto }}</td>
-          <td>{{ p.quantidade }}</td>
-        </tr>
+          <tr>
+            <td>{{ p.marca_planilha or "" }}</td>
+            <td>{{ p.produto }}</td>
+            <td>{{ p.quantidade }}</td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
+  {% else %}
+    <p>Nenhum produto cadastrado para este hospital.</p>
   {% endif %}
+
 </div>
 {% endblock %}

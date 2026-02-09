@@ -13,13 +13,10 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
-    from . import models  # garante models carregados
+    # importa models depois do db existir
+    from app import models  # noqa: F401
 
-    from .routes import bp
+    from app.routes import bp
     app.register_blueprint(bp)
 
     return app
-
-
-
-
