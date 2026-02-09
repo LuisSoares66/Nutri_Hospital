@@ -268,14 +268,12 @@ from sqlalchemy import inspect, text
 @bp.route("/admin/importar_excel_uma_vez", methods=["POST"])
 @admin_required
 def importar_excel_uma_vez():
-    # trava: se já existe hospital, não importa de novo
     if Hospital.query.first():
         flash("Importação já realizada.", "warning")
         return redirect(url_for("main.admin_panel"))
 
     data_dir = "data"
 
-    # 1) HOSPITAIS
     for r in load_hospitais_from_excel(data_dir):
         h = Hospital(
             nome_hospital=r.get("nome_hospital"),
@@ -289,9 +287,9 @@ def importar_excel_uma_vez():
         db.session.add(h)
 
     db.session.commit()
-
     flash("Importação inicial concluída.", "success")
     return redirect(url_for("main.hospitais"))
+
 
 
 # ======================================================
