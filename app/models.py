@@ -1,7 +1,6 @@
-from datetime import datetime
 from app import db
 
-
+from datetime import datetime
 
 class AppMeta(db.Model):
     __tablename__ = "app_meta"
