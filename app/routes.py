@@ -251,33 +251,6 @@ def relatorio_csv():
     )
 
 
-# ======================================================
-# IMPORTAÇÃO EXCEL (UMA VEZ)
-# ======================================================
-@bp.route("/admin/importar_excel_uma_vez")
-def importar_excel_uma_vez():
-    if Hospital.query.first():
-        flash("Importação já realizada.", "warning")
-        return redirect(url_for("main.hospitais"))
-
-    data_dir = "data"
-
-    for r in load_hospitais_from_excel(data_dir):
-        h = Hospital(
-            nome_hospital=r.get("nome_hospital"),
-            endereco=r.get("endereco"),
-            numero=r.get("numero"),
-            complemento=r.get("complemento"),
-            cep=r.get("cep"),
-            cidade=r.get("cidade"),
-            estado=r.get("estado"),
-        )
-        db.session.add(h)
-
-    db.session.commit()
-    flash("Importação inicial concluída.", "success")
-    return redirect(url_for("main.hospitais"))
-
 @bp.route("/debug_endpoints")
 def debug_endpoints():
     return "<br>".join(sorted([r.endpoint for r in bp.deferred_functions if hasattr(r, "endpoint")]))
