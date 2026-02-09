@@ -31,6 +31,14 @@ def index():
     return redirect(url_for("main.hospitais"))
 
 
+from app.auth import admin_required
+
+@bp.route("/admin", methods=["GET"])
+@admin_required
+def admin_panel():
+    return render_template("admin.html")
+
+
 # ======================================================
 # HOSPITAIS
 # ======================================================
