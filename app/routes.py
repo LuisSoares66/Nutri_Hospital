@@ -261,3 +261,8 @@ def importar_excel_uma_vez():
     db.session.commit()
     flash("Importação inicial concluída.", "success")
     return redirect(url_for("main.hospitais"))
+
+@bp.route("/debug_endpoints")
+def debug_endpoints():
+    return "<br>".join(sorted([r.endpoint for r in bp.deferred_functions if hasattr(r, "endpoint")]))
+
