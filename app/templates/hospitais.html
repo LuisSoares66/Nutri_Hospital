@@ -70,14 +70,6 @@
               <!-- APAGAR HOSPITAL -->
               
               {% if session.get("is_admin") %}
-                <a class="btn secondary" href="{{ url_for('main.admin_panel') }}">🔒 Admin</a>
-                <a class="btn danger" href="{{ url_for('auth.admin_logout') }}">Sair Admin</a>
-              {% else %}
-                <a class="btn secondary" href="{{ url_for('auth.admin_login') }}">🔑 Login Admin</a>
-              {% endif %}
-
-
-              {% if session.get("is_admin") %}
               <form method="POST"
                     action="{{ url_for('main.excluir_hospital', hospital_id=h.id) }}"
                     onsubmit="return confirm('Tem certeza que deseja APAGAR este hospital e TODOS os dados relacionados?');"
