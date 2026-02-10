@@ -2,38 +2,46 @@
 
 {% block content %}
 <div class="container">
+
   <h1>Contatos – {{ hospital.nome_hospital }}</h1>
 
-    <a class="btn secondary"
-   href="{{ url_for('main.hospitais') }}">
-   ⬅ Voltar
-    </a>
-
-  </div>
+  <a class="btn secondary" href="{{ url_for('main.hospitais') }}">
+    ⬅ Voltar
+  </a>
 
   <hr>
 
   {% if contatos|length == 0 %}
     <p>Nenhum contato cadastrado.</p>
   {% else %}
-    <table class="table">
+    <table class="table" style="width:100%; border-collapse:separate; border-spacing: 0 8px;">
       <thead>
         <tr>
-          <th>Nome</th>
-          <th>Cargo</th>
-          <th>Telefone</th>
+          <th style="width:40%;">Nome</th>
+          <th style="width:30%;">Cargo</th>
+          <th style="width:30%;">Telefone</th>
         </tr>
       </thead>
+
       <tbody>
         {% for c in contatos %}
-        <tr>
-          <td>{{ c.nome_contato }}</td>
-          <td>{{ c.cargo or "" }}</td>
-          <td>{{ c.telefone or "" }}</td>
+        <tr style="background:#fafafa;">
+          <td style="padding:10px 14px;">
+            {{ c.nome_contato }}
+          </td>
+
+          <td style="padding:10px 14px;">
+            {{ c.cargo or "-" }}
+          </td>
+
+          <td style="padding:10px 14px;">
+            {{ c.telefone or "-" }}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   {% endif %}
+
 </div>
 {% endblock %}
