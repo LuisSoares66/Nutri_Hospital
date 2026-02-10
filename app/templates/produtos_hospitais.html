@@ -1,77 +1,91 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="container">
 
+<div class="container">
   <h1>Produtos – {{ hospital.nome_hospital }}</h1>
 
-  <div class="actions" style="display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;">
-    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
-  </div>
+  <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
 
   <hr>
 
-  <!-- FORMULÁRIO: ADICIONAR PRODUTO -->
-  <h2>Adicionar produto ao hospital</h2>
+  <h2>Adicionar produto</h2>
 
-  {% if not catalogo or catalogo|length == 0 %}
-    <p><b>Atenção:</b> não encontrei <code>data/produtos.xlsx</code> (ou está vazio). Envie o arquivo para a pasta <code>data</code> e tente novamente.</p>
-  {% endif %}
+  <form method="POST">
+    <div style="max-width:700px; display:grid; gap:12px;">
 
-  <form method="POST" style="margin: 16px 0;">
-    <div style="display:grid; gap:10px; max-width: 680px;">
-
-      <label><b>Produto (lista com rolagem)</b></label>
-
-      <!-- Caixa rolável -->
-      <select name="produto" size="12" required style="width:100%; padding:10px;">
-        {% for item in catalogo %}
-          <option value="{{ item.produto }}">{{ item.marca }} — {{ item.produto }}</option>
+      <!-- MARCA -->
+      <label><b>Marca</b></label>
+      <select id="marcaSelect" name="marca_planilha" required>
+        <option value="">-- selecione a marca --</option>
+        {% for m in catalogo | map(attribute='marca') | unique %}
+          <option value="{{ m }}">{{ m }}</option>
         {% endfor %}
       </select>
 
-      <label><b>Marca (planilha)</b></label>
-      <select name="marca_planilha" required style="width:100%; padding:10px;">
-        <option value="PRODIET">PRODIET</option>
-        <option value="NESTLÉ">NESTLÉ</option>
-        <option value="DANONE">DANONE</option>
-        <option value="FRESENIUS">FRESENIUS</option>
+      <!-- PRODUTOS (ROLAGEM) -->
+      <label><b>Produto</b></label>
+      <select id="produtoSelect" name="produto" size="10" required>
+        <!-- preenchido via JS -->
       </select>
 
       <label><b>Quantidade</b></label>
       <input type="number" name="quantidade" min="0" value="0" required>
 
-      <button class="btn primary" type="submit">+ Adicionar</button>
+      <button class="btn primary">+ Adicionar</button>
     </div>
   </form>
 
   <hr>
 
-  <!-- LISTA DE PRODUTOS CADASTRADOS -->
-  <h2>Produtos cadastrados para este hospital</h2>
+  <h2>Produtos cadastrados</h2>
 
-  {% if produtos|length == 0 %}
-    <p>Nenhum produto cadastrado.</p>
-  {% else %}
+  {% if produtos %}
     <table class="table">
       <thead>
         <tr>
           <th>Marca</th>
           <th>Produto</th>
-          <th>Quantidade</th>
+          <th>Qtd</th>
         </tr>
       </thead>
       <tbody>
         {% for p in produtos %}
         <tr>
-          <td>{{ p.marca_planilha or "" }}</td>
+          <td>{{ p.marca_planilha }}</td>
           <td>{{ p.produto }}</td>
           <td>{{ p.quantidade }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+  {% else %}
+    <p>Nenhum produto cadastrado.</p>
   {% endif %}
-
 </div>
+
+<!-- ========================= -->
+<!-- SCRIPT DE FILTRO -->
+<!-- ========================= -->
+<script>
+  const catalogo = {{ catalogo | tojson }};
+  const marcaSelect = document.getElementById("marcaSelect");
+  const produtoSelect = document.getElementById("produtoSelect");
+
+  marcaSelect.addEventListener("change", function () {
+    const marca = this.value;
+    produtoSelect.innerHTML = "";
+
+    if (!marca) return;
+
+    const filtrados = catalogo.filter(p => p.marca === marca);
+
+    filtrados.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.produto;
+      opt.textContent = p.produto;
+      produtoSelect.appendChild(opt);
+    });
+  });
+</script>
+
 {% endblock %}
