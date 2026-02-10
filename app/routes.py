@@ -20,6 +20,9 @@ from app.excel_loader import (
 
 from app.pdf_report import build_hospital_report_pdf
 
+from app.excel_loader import load_catalogo_produtos_from_excel
+
+
 bp = Blueprint("main", __name__)
 
 
@@ -145,12 +148,22 @@ def dados_hospital(hospital_id):
 def produtos_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
+    # catálogo de produtos para seleção (lista rolável)
+    catalogo = load_catalogo_produtos_from_excel("data")
+
     if request.method == "POST":
+        produto_sel = (request.form.get("produto") or "").strip()
+        marca_sel = (request.form.get("marca_planilha") or "").strip()
+
+        if not produto_sel:
+            flash("Selecione um produto na lista.", "error")
+            return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+
         p = ProdutoHospital(
             hospital_id=hospital_id,
             nome_hospital=hospital.nome_hospital,
-            marca_planilha=request.form.get("marca_planilha"),
-            produto=request.form.get("produto"),
+            marca_planilha=marca_sel,
+            produto=produto_sel,
             quantidade=int(request.form.get("quantidade") or 0),
         )
         db.session.add(p)
@@ -162,8 +175,10 @@ def produtos_hospital(hospital_id):
     return render_template(
         "produtos_hospitais.html",
         hospital=hospital,
-        produtos=produtos_db
+        produtos=produtos_db,
+        catalogo=catalogo
     )
+
 
 @bp.route("/hospitais/<int:hospital_id>/relatorios", methods=["GET"])
 def relatorios(hospital_id):
