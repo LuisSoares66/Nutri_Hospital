@@ -1,49 +1,58 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="container">
 
   <h1>Produtos – {{ hospital.nome_hospital }}</h1>
 
-  <div class="actions" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+  <div class="actions" style="display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;">
     <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
-
-    <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">
-      📄 Relatórios
-    </a>
   </div>
 
   <hr>
 
-  <h2>Adicionar produto</h2>
-  <form method="POST" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:20px;">
+  <!-- FORMULÁRIO: ADICIONAR PRODUTO -->
+  <h2>Adicionar produto ao hospital</h2>
 
-    <div>
-      <label>Marca/Planilha</label><br>
-      <select name="marca_planilha" required>
-        <option value="">Selecione</option>
+  {% if not catalogo or catalogo|length == 0 %}
+    <p><b>Atenção:</b> não encontrei <code>data/produtos.xlsx</code> (ou está vazio). Envie o arquivo para a pasta <code>data</code> e tente novamente.</p>
+  {% endif %}
+
+  <form method="POST" style="margin: 16px 0;">
+    <div style="display:grid; gap:10px; max-width: 680px;">
+
+      <label><b>Produto (lista com rolagem)</b></label>
+
+      <!-- Caixa rolável -->
+      <select name="produto" size="12" required style="width:100%; padding:10px;">
+        {% for item in catalogo %}
+          <option value="{{ item.produto }}">{{ item.marca }} — {{ item.produto }}</option>
+        {% endfor %}
+      </select>
+
+      <label><b>Marca (planilha)</b></label>
+      <select name="marca_planilha" required style="width:100%; padding:10px;">
         <option value="PRODIET">PRODIET</option>
         <option value="NESTLÉ">NESTLÉ</option>
         <option value="DANONE">DANONE</option>
         <option value="FRESENIUS">FRESENIUS</option>
       </select>
-    </div>
 
-    <div style="min-width:260px;">
-      <label>Produto</label><br>
-      <input type="text" name="produto" placeholder="Nome do produto" required>
-    </div>
+      <label><b>Quantidade</b></label>
+      <input type="number" name="quantidade" min="0" value="0" required>
 
-    <div style="width:120px;">
-      <label>Quantidade</label><br>
-      <input type="number" name="quantidade" value="0" min="0">
+      <button class="btn primary" type="submit">+ Adicionar</button>
     </div>
-
-    <button class="btn primary" type="submit">+ Adicionar</button>
   </form>
 
-  <h2>Produtos cadastrados</h2>
+  <hr>
 
-  {% if produtos and produtos|length > 0 %}
+  <!-- LISTA DE PRODUTOS CADASTRADOS -->
+  <h2>Produtos cadastrados para este hospital</h2>
+
+  {% if produtos|length == 0 %}
+    <p>Nenhum produto cadastrado.</p>
+  {% else %}
     <table class="table">
       <thead>
         <tr>
@@ -54,16 +63,14 @@
       </thead>
       <tbody>
         {% for p in produtos %}
-          <tr>
-            <td>{{ p.marca_planilha or "" }}</td>
-            <td>{{ p.produto }}</td>
-            <td>{{ p.quantidade }}</td>
-          </tr>
+        <tr>
+          <td>{{ p.marca_planilha or "" }}</td>
+          <td>{{ p.produto }}</td>
+          <td>{{ p.quantidade }}</td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
-  {% else %}
-    <p>Nenhum produto cadastrado para este hospital.</p>
   {% endif %}
 
 </div>
