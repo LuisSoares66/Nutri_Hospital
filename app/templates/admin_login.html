@@ -10,6 +10,11 @@
     <input type="password" name="password" placeholder="Senha" required>
     <button class="btn primary" type="submit">Entrar</button>
   </form>
+    <form method="POST"
+        action="{{ url_for('main.importar_excel_uma_vez') }}"
+        onsubmit="return confirm('Importar TODOS os dados do Excel? (uma vez)');">
+    <button class="btn secondary" type="submit">⬆ Importar Excel (uma vez)</button>
+    </form>
 
   <div style="margin-top:16px;">
     <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
