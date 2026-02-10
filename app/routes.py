@@ -1,6 +1,7 @@
 import io
 import csv
 from sqlalchemy.exc import IntegrityError
+from app.auth import admin_required
 from flask import (
     Blueprint, render_template, request,
     redirect, url_for, flash, Response
@@ -70,15 +71,12 @@ def novo_hospital():
 
     return render_template("hospital_form.html")
 
-
-
-
 @bp.route("/hospitais/<int:hospital_id>/excluir", methods=["POST"])
+@admin_required
 def excluir_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
     try:
-        # Apaga dependências explicitamente (evita erro 500 por FK)
         Contato.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
         ProdutoHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
         DadosHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
@@ -86,18 +84,34 @@ def excluir_hospital(hospital_id):
         db.session.delete(hospital)
         db.session.commit()
 
-        flash("Hospital apagado com sucesso (com todos os dados relacionados).", "success")
-        return redirect(url_for("main.hospitais"))
-
-    except IntegrityError as e:
-        db.session.rollback()
-        flash(f"Não foi possível apagar por vínculo no banco: {e.orig}", "error")
-        return redirect(url_for("main.hospitais"))
-
+        flash("Hospital apagado com sucesso.", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Erro ao apagar hospital: {e}", "error")
-        return redirect(url_for("main.hospitais"))
+
+    return redirect(url_for("main.hospitais"))
+
+
+@bp.route("/hospitais/<int:hospital_id>/excluir", methods=["POST"])
+@admin_required
+def excluir_hospital(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+
+    try:
+        Contato.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
+        ProdutoHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
+        DadosHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
+
+        db.session.delete(hospital)
+        db.session.commit()
+
+        flash("Hospital apagado com sucesso.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao apagar hospital: {e}", "error")
+
+    return redirect(url_for("main.hospitais"))
+
 
 
 

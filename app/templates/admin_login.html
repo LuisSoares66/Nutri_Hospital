@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width:520px;">
+
+  <h1>Login Admin</h1>
+  <p>Digite a senha do administrador.</p>
+
+  <form method="POST" style="display:grid; gap:12px; margin-top:16px;">
+    <input type="password" name="password" placeholder="Senha do admin" required>
+    <button class="btn primary" type="submit">Entrar</button>
+  </form>
+
+  <div style="margin-top:16px;">
+    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+  </div>
+
+</div>
+{% endblock %}
