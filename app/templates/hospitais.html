@@ -68,7 +68,6 @@
               </a>
 
               <!-- APAGAR HOSPITAL -->
-              
               {% if session.get("is_admin") %}
               <form method="POST"
                     action="{{ url_for('main.excluir_hospital', hospital_id=h.id) }}"
