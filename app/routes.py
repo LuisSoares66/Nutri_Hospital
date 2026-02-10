@@ -358,3 +358,5 @@ def reset_db():
         flash(f"Erro ao zerar banco: {e}", "error")
 
     return redirect(url_for("main.admin_panel"))
+
+

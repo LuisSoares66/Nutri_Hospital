@@ -75,18 +75,14 @@ input:focus,select:focus,textarea:focus{border-color:rgba(29,209,126,.7); box-sh
 .btn.secondary{background:transparent; color:var(--text); border:1px solid rgba(29,209,126,.6)}
 .btn.secondary:hover{background:rgba(29,209,126,.12)}
 .btn.danger{background:var(--danger); color:#240000}
-
-.btn.danger {
-    background-color: #c62828;
-    color: #fff;
-    border-radius: 6px;
-    padding: 10px 14px;
-    text-decoration: none;
+.btn.danger{
+  background: #c62828;
+  color: #fff;
+}
+.btn.danger:hover{
+  background:#b71c1c;
 }
 
-.btn.danger:hover {
-    background-color: #b71c1c;
-}
 
 .table{
   width:100%;
