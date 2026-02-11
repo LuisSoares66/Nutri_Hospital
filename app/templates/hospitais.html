@@ -71,11 +71,10 @@
                     action="{{ url_for('main.excluir_hospital', hospital_id=h.id) }}"
                     onsubmit="return confirm('Apagar APENAS este hospital e todos os dados relacionados?');"
                     style="display:inline;">
-                <button class="btn danger" type="submit">
-                  🗑 APAGAR
-                </button>
+                <button class="btn danger" type="submit">🗑 APAGAR</button>
               </form>
             {% endif %}
+
 
           </td>
         </tr>

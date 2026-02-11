@@ -97,10 +97,23 @@ from app.auth import admin_required
 @admin_required
 def excluir_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
-    db.session.delete(hospital)
-    db.session.commit()
-    flash("Hospital excluído.", "success")
+
+    try:
+        # Remove dependências primeiro (evita FK violation mesmo se cascade falhar)
+        Contato.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
+        ProdutoHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
+        DadosHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
+
+        db.session.delete(hospital)
+        db.session.commit()
+
+        flash("Hospital apagado com sucesso.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao apagar hospital: {e}", "error")
+
     return redirect(url_for("main.hospitais"))
+
 
 # ======================================================
 # CONTATOS
