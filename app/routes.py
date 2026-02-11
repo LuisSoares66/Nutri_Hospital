@@ -1,4 +1,5 @@
 import io
+import traceback
 import csv
 from sqlalchemy.exc import IntegrityError
 from app.auth import admin_required
@@ -292,160 +293,166 @@ from sqlalchemy import inspect, text
 # ======================================================
 # IMPORTAR EXCEL (UMA VEZ) -> precisa ser POST
 # ======================================================
+IMPORT_FLAG_KEY = "import_excel_done_v1"
+
+def _norm(s: str) -> str:
+    return (s or "").strip().upper()
+
 @bp.route("/admin/importar_excel_uma_vez", methods=["POST"])
 @admin_required
 def importar_excel_uma_vez():
-    # trava "uma vez" usando AppMeta
-    flag = AppMeta.query.filter_by(key=IMPORT_FLAG_KEY).first()
-    if flag and (flag.value or "").lower() == "true":
-        flash("Importação já foi realizada (uma vez).", "warning")
-        return redirect(url_for("main.admin_panel"))
+    try:
+        # trava
+        flag = AppMeta.query.filter_by(key=IMPORT_FLAG_KEY).first()
+        if flag and (flag.value or "").lower() == "true":
+            flash("Importação já foi realizada (uma vez).", "warning")
+            return redirect(url_for("main.admin_panel"))
 
-    data_dir = "data"
+        data_dir = os.path.join(os.getcwd(), "data")
 
-    # ---------- 1) HOSPITAIS ----------
-    rows_h = load_hospitais_from_excel(data_dir)
-    if not isinstance(rows_h, list):
-        flash("Erro: hospitais.xlsx não retornou lista de registros.", "error")
-        return redirect(url_for("main.admin_panel"))
+        # ---------------- HOSPITAIS ----------------
+        rows_h = load_hospitais_from_excel(data_dir)
 
-    # cria hospitais e mapa nome->id
-    nome_to_id = {}
-    for r in rows_h:
-        if not isinstance(r, dict):
-            continue
-        nome = (r.get("nome_hospital") or "").strip()
-        if not nome:
-            continue
+        print("IMPORT DEBUG hospitais:", type(rows_h), "len=", (len(rows_h) if hasattr(rows_h, "__len__") else None))
+        print("IMPORT DEBUG hospitais first item:", (rows_h[0] if isinstance(rows_h, list) and rows_h else None))
 
-        h = Hospital(
-            nome_hospital=nome,
-            endereco=r.get("endereco"),
-            numero=r.get("numero"),
-            complemento=r.get("complemento"),
-            cep=r.get("cep"),
-            cidade=r.get("cidade"),
-            estado=r.get("estado"),
-        )
-        db.session.add(h)
-        db.session.flush()  # pega h.id sem precisar commit
-        nome_to_id[_norm(nome)] = h.id
+        if not isinstance(rows_h, list) or (rows_h and not isinstance(rows_h[0], dict)):
+            raise ValueError(f"hospitais.xlsx retornou formato inválido: {type(rows_h)} / first={type(rows_h[0]) if isinstance(rows_h, list) and rows_h else None}")
 
-    # ---------- 2) CONTATOS ----------
-    rows_c = load_contatos_from_excel(data_dir)
-    for r in (rows_c or []):
-        if not isinstance(r, dict):
-            continue
+        nome_to_id = {}
+        for r in rows_h:
+            nome = (r.get("nome_hospital") or "").strip()
+            if not nome:
+                continue
+            h = Hospital(
+                nome_hospital=nome,
+                endereco=r.get("endereco"),
+                numero=r.get("numero"),
+                complemento=r.get("complemento"),
+                cep=r.get("cep"),
+                cidade=r.get("cidade"),
+                estado=r.get("estado"),
+            )
+            db.session.add(h)
+            db.session.flush()
+            nome_to_id[_norm(nome)] = h.id
 
-        # tenta achar hospital_id de várias formas
-        hid = r.get("id_hospital") or r.get("hospital_id")
-        if hid:
+        # ---------------- CONTATOS ----------------
+        rows_c = load_contatos_from_excel(data_dir) or []
+        print("IMPORT DEBUG contatos:", type(rows_c), "len=", (len(rows_c) if hasattr(rows_c, "__len__") else None))
+        if rows_c and not isinstance(rows_c[0], dict):
+            raise ValueError(f"contatos.xlsx retornou formato inválido: {type(rows_c)} / first={type(rows_c[0])}")
+
+        for r in rows_c:
+            hid = r.get("id_hospital") or r.get("hospital_id")
             try:
-                hid = int(hid)
+                hid = int(hid) if hid not in (None, "", 0) else None
             except:
                 hid = None
 
-        if not hid:
-            hn = r.get("hospital_nome") or r.get("nome_hospital") or ""
-            hid = nome_to_id.get(_norm(hn))
+            if not hid:
+                hn = r.get("hospital_nome") or r.get("nome_hospital") or ""
+                hid = nome_to_id.get(_norm(hn))
 
-        c = Contato(
-            hospital_id=hid,  # pode ser None (permitido)
-            hospital_nome=(r.get("hospital_nome") or r.get("nome_hospital") or ""),
-            nome_contato=r.get("nome_contato") or "",
-            cargo=r.get("cargo"),
-            telefone=r.get("telefone"),
-        )
-        # evita inserir contato vazio
-        if (c.nome_contato or "").strip():
+            nome_contato = (r.get("nome_contato") or "").strip()
+            if not nome_contato:
+                continue
+
+            c = Contato(
+                hospital_id=hid,
+                hospital_nome=(r.get("hospital_nome") or r.get("nome_hospital") or ""),
+                nome_contato=nome_contato,
+                cargo=r.get("cargo"),
+                telefone=r.get("telefone"),
+            )
             db.session.add(c)
 
-    # ---------- 3) DADOS HOSPITAIS ----------
-    rows_d = load_dados_hospitais_from_excel(data_dir)
-    for r in (rows_d or []):
-        if not isinstance(r, dict):
-            continue
+        # ---------------- DADOS HOSPITAIS ----------------
+        rows_d = load_dados_hospitais_from_excel(data_dir) or []
+        print("IMPORT DEBUG dadoshospitais:", type(rows_d), "len=", (len(rows_d) if hasattr(rows_d, "__len__") else None))
+        if rows_d and not isinstance(rows_d[0], dict):
+            raise ValueError(f"dadoshospitais.xlsx retornou formato inválido: {type(rows_d)} / first={type(rows_d[0])}")
 
-        hid = r.get("id_hospital") or r.get("hospital_id")
-        if hid:
+        for r in rows_d:
+            hid = r.get("id_hospital") or r.get("hospital_id")
             try:
-                hid = int(hid)
+                hid = int(hid) if hid not in (None, "", 0) else None
             except:
                 hid = None
 
-        if not hid:
-            # às vezes a planilha tem hospital_nome
-            hn = r.get("hospital_nome") or r.get("nome_hospital") or ""
-            hid = nome_to_id.get(_norm(hn))
+            if not hid:
+                hn = r.get("hospital_nome") or r.get("nome_hospital") or ""
+                hid = nome_to_id.get(_norm(hn))
 
-        if not hid:
-            continue
+            if not hid:
+                continue
 
-        dados = DadosHospital.query.filter_by(hospital_id=hid).first()
-        if not dados:
-            dados = DadosHospital(hospital_id=hid)
-            db.session.add(dados)
+            dados = DadosHospital.query.filter_by(hospital_id=hid).first()
+            if not dados:
+                dados = DadosHospital(hospital_id=hid)
+                db.session.add(dados)
 
-        # OBS: aqui eu mapeio alguns campos principais.
-        # Se você quiser, eu mapeio TODOS os campos do seu questionário (só me mande os nomes exatos das colunas)
-        dados.especialidade = r.get("Qual a especialidade do hospital?") or r.get("especialidade")
-        dados.leitos = r.get("Quantos leitos?") or r.get("leitos")
-        dados.leitos_uti = r.get("Quantos leitos de UTI?") or r.get("leitos_uti")
-        dados.fatores_decisorios = r.get("Quais fatores são decisórios para o hospital escolher um determinado produto?") or r.get("fatores_decisorios")
-        dados.prioridades_atendimento = r.get("Quais as prioridas do hospital para um atendimento nutricional de excelencia?") or r.get("prioridades_atendimento")
-        dados.certificacao = r.get("O hospital tem certificação ONA, CANADIAN, Joint Comission,...)?") or r.get("certificacao")
-        dados.emtn = r.get("O hospital tem EMTN?") or r.get("emtn")
-        dados.emtn_membros = r.get("Se sim, quais os membro (nomes e especialidade)?") or r.get("emtn_membros")
+            # mapeia os principais (você pode completar depois)
+            dados.especialidade = r.get("Qual a especialidade do hospital?") or r.get("especialidade")
+            dados.leitos = r.get("Quantos leitos?") or r.get("leitos")
+            dados.leitos_uti = r.get("Quantos leitos de UTI?") or r.get("leitos_uti")
 
-    # ---------- 4) PRODUTOS HOSPITAIS ----------
-    rows_p = load_produtos_hospitais_from_excel(data_dir)
-    for r in (rows_p or []):
-        if not isinstance(r, dict):
-            continue
+        # ---------------- PRODUTOS HOSPITAIS ----------------
+        rows_p = load_produtos_hospitais_from_excel(data_dir) or []
+        print("IMPORT DEBUG produtoshospitais:", type(rows_p), "len=", (len(rows_p) if hasattr(rows_p, "__len__") else None))
+        if rows_p and not isinstance(rows_p[0], dict):
+            raise ValueError(f"produtoshospitais.xlsx retornou formato inválido: {type(rows_p)} / first={type(rows_p[0])}")
 
-        hid = r.get("hospital_id") or r.get("id_hospital")
-        if hid:
+        for r in rows_p:
+            hid = r.get("hospital_id") or r.get("id_hospital")
             try:
-                hid = int(hid)
+                hid = int(hid) if hid not in (None, "", 0) else None
             except:
                 hid = None
 
-        if not hid:
-            hn = r.get("nome_hospital") or r.get("hospital_nome") or ""
-            hid = nome_to_id.get(_norm(hn))
+            if not hid:
+                hn = r.get("nome_hospital") or r.get("hospital_nome") or ""
+                hid = nome_to_id.get(_norm(hn))
 
-        if not hid:
-            continue
+            if not hid:
+                continue
 
-        prod = (r.get("produto") or "").strip()
-        if not prod:
-            continue
+            prod = (r.get("produto") or "").strip()
+            if not prod:
+                continue
 
-        qtd = r.get("quantidade") or 0
-        try:
-            qtd = int(qtd)
-        except:
-            qtd = 0
+            qtd = r.get("quantidade") or 0
+            try:
+                qtd = int(qtd)
+            except:
+                qtd = 0
 
-        ph = ProdutoHospital(
-            hospital_id=hid,
-            nome_hospital=r.get("nome_hospital") or r.get("hospital_nome") or "",
-            marca_planilha=r.get("marca") or r.get("marca_planilha") or "",
-            produto=prod,
-            quantidade=qtd
-        )
-        db.session.add(ph)
+            ph = ProdutoHospital(
+                hospital_id=hid,
+                nome_hospital=r.get("nome_hospital") or r.get("hospital_nome") or "",
+                marca_planilha=r.get("marca") or r.get("marca_planilha") or "",
+                produto=prod,
+                quantidade=qtd
+            )
+            db.session.add(ph)
 
-    # grava flag e commit final
-    if not flag:
-        flag = AppMeta(key=IMPORT_FLAG_KEY, value="true")
-        db.session.add(flag)
-    else:
-        flag.value = "true"
+        # flag
+        if not flag:
+            flag = AppMeta(key=IMPORT_FLAG_KEY, value="true")
+            db.session.add(flag)
+        else:
+            flag.value = "true"
 
-    db.session.commit()
-    flash("Importação completa concluída (hospitais + contatos + dados + produtos).", "success")
-    return redirect(url_for("main.admin_panel"))
+        db.session.commit()
+        flash("Importação completa concluída.", "success")
+        return redirect(url_for("main.admin_panel"))
+
+    except Exception as e:
+        db.session.rollback()
+        print("IMPORT ERROR:", e)
+        traceback.print_exc()
+        flash(f"Erro ao importar: {e}", "danger")
+        return redirect(url_for("main.admin_panel"))
 
 
 
