@@ -91,24 +91,15 @@ def novo_hospital():
 
 
 
+from app.auth import admin_required
+
 @bp.route("/hospitais/<int:hospital_id>/excluir", methods=["POST"])
 @admin_required
 def excluir_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
-
-    try:
-        Contato.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
-        ProdutoHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
-        DadosHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
-
-        db.session.delete(hospital)
-        db.session.commit()
-
-        flash("Hospital apagado com sucesso.", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Erro ao apagar hospital: {e}", "error")
-
+    db.session.delete(hospital)
+    db.session.commit()
+    flash("Hospital excluído.", "success")
     return redirect(url_for("main.hospitais"))
 
 # ======================================================
@@ -606,3 +597,33 @@ def excluir_produto(hospital_id, produto_id):
     db.session.commit()
     flash("Produto removido.", "success")
     return redirect(url_for("main.editar_produtos_hospital", hospital_id=hospital_id))
+
+@bp.route("/hospitais/<int:hospital_id>/info", methods=["GET", "POST"])
+def hospital_info(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+
+    if request.method == "POST":
+        nome = (request.form.get("nome_hospital") or "").strip()
+        if not nome:
+            flash("Nome do hospital é obrigatório.", "error")
+            return redirect(url_for("main.hospital_info", hospital_id=hospital_id))
+
+        hospital.nome_hospital = nome
+        hospital.endereco = (request.form.get("endereco") or "").strip()
+        hospital.numero = (request.form.get("numero") or "").strip()
+        hospital.complemento = (request.form.get("complemento") or "").strip()
+        hospital.cep = (request.form.get("cep") or "").strip()
+        hospital.cidade = (request.form.get("cidade") or "").strip()
+        hospital.estado = (request.form.get("estado") or "").strip()
+
+        try:
+            db.session.commit()
+            flash("Informações do hospital atualizadas.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar: {e}", "error")
+
+        return redirect(url_for("main.hospital_info", hospital_id=hospital_id))
+
+    return render_template("hospital_info.html", hospital=hospital)
+
