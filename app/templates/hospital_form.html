@@ -1,55 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-  <h1>Novo Hospital</h1>
 
-  <div class="row" style="margin-bottom:12px;">
-    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
-  </div>
+<div class="card">
+  <h2>Novo Hospital</h2>
+  <p class="muted">Preencha e clique em salvar.</p>
 
-  <div class="card">
-    <form method="POST" action="{{ url_for('main.novo_hospital') }}" class="grid">
+  <form method="POST" action="{{ url_for('main.novo_hospital') }}">
+    <label>Nome do hospital *</label>
+    <input name="nome_hospital" required>
 
-      <div>
-        <label>Nome do hospital *</label>
-        <input name="nome_hospital" required>
-      </div>
+    <label>Endereço</label>
+    <input name="endereco">
 
-      <div>
-        <label>Endereço</label>
-        <input name="endereco">
-      </div>
+    <label>Número</label>
+    <input name="numero">
 
-      <div>
-        <label>Número</label>
-        <input name="numero">
-      </div>
+    <label>Complemento</label>
+    <input name="complemento">
 
-      <div>
-        <label>Complemento</label>
-        <input name="complemento">
-      </div>
+    <label>CEP</label>
+    <input name="cep">
 
-      <div>
-        <label>CEP</label>
-        <input name="cep">
-      </div>
+    <label>Cidade</label>
+    <input name="cidade">
 
-      <div>
-        <label>Cidade</label>
-        <input name="cidade">
-      </div>
+    <label>Estado</label>
+    <input name="estado">
 
-      <div>
-        <label>Estado</label>
-        <input name="estado">
-      </div>
-
-      <div style="grid-column:1/-1;">
-        <button class="btn" type="submit">Salvar</button>
-      </div>
-
-    </form>
-  </div>
+    <div class="btns">
+      <button class="btn" type="submit">Salvar</button>
+      <a class="btn secondary" href="{{ url_for('main.hospitais') }}">Voltar</a>
+    </div>
+  </form>
 </div>
+
 {% endblock %}

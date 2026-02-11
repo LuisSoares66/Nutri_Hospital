@@ -64,7 +64,7 @@ def novo_hospital():
         nome = (request.form.get("nome_hospital") or "").strip()
 
         if not nome:
-            flash("Informe o nome do hospital.", "danger")
+            flash("Informe o nome do hospital.", "error")
             return redirect(url_for("main.novo_hospital"))
 
         h = Hospital(
@@ -84,10 +84,11 @@ def novo_hospital():
             return redirect(url_for("main.hospitais"))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erro ao salvar hospital: {e}", "danger")
+            flash(f"Erro ao salvar hospital: {e}", "error")
             return redirect(url_for("main.novo_hospital"))
 
     return render_template("hospital_form.html")
+
 
 
 @bp.route("/hospitais/<int:hospital_id>/excluir", methods=["POST"])
