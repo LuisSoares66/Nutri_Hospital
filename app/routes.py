@@ -110,24 +110,33 @@ def contatos(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
     if request.method == "POST":
-        c = Contato(
-            hospital_id=hospital_id,
-            hospital_nome=hospital.nome_hospital,
-            nome_contato=request.form.get("nome_contato"),
-            cargo=request.form.get("cargo"),
-            telefone=request.form.get("telefone"),
-        )
-        db.session.add(c)
+        contato_id = request.form.get("contato_id")
+
+        if contato_id:
+            # EDITAR
+            contato = Contato.query.get_or_404(contato_id)
+        else:
+            # NOVO
+            contato = Contato(hospital_id=hospital_id)
+            db.session.add(contato)
+
+        contato.hospital_nome = hospital.nome_hospital
+        contato.nome_contato = request.form.get("nome_contato")
+        contato.cargo = request.form.get("cargo")
+        contato.telefone = request.form.get("telefone")
+
         db.session.commit()
-        flash("Contato salvo.", "success")
+        flash("Contato salvo com sucesso.", "success")
         return redirect(url_for("main.contatos", hospital_id=hospital_id))
 
     contatos_db = Contato.query.filter_by(hospital_id=hospital_id).all()
+
     return render_template(
         "contatos.html",
         hospital=hospital,
         contatos=contatos_db
     )
+
 
 
 # ======================================================
@@ -138,11 +147,12 @@ def dados_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
     dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
 
-    if request.method == "POST":
-        if not dados:
-            dados = DadosHospital(hospital_id=hospital_id)
-            db.session.add(dados)
+    if not dados:
+        dados = DadosHospital(hospital_id=hospital_id)
+        db.session.add(dados)
+        db.session.commit()
 
+    if request.method == "POST":
         dados.especialidade = request.form.get("especialidade")
         dados.leitos = request.form.get("leitos")
         dados.leitos_uti = request.form.get("leitos_uti")
@@ -153,7 +163,7 @@ def dados_hospital(hospital_id):
         dados.emtn_membros = request.form.get("emtn_membros")
 
         db.session.commit()
-        flash("Dados salvos.", "success")
+        flash("Dados atualizados.", "success")
         return redirect(url_for("main.dados_hospital", hospital_id=hospital_id))
 
     return render_template(
@@ -163,6 +173,7 @@ def dados_hospital(hospital_id):
     )
 
 
+
 # ======================================================
 # PRODUTOS
 # ======================================================
@@ -170,36 +181,32 @@ def dados_hospital(hospital_id):
 def produtos_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
-    # catálogo de produtos para seleção (lista rolável)
-    catalogo = load_catalogo_produtos_from_excel("data")
-
     if request.method == "POST":
-        produto_sel = (request.form.get("produto") or "").strip()
-        marca_sel = (request.form.get("marca_planilha") or "").strip()
+        produto_id = request.form.get("produto_id")
 
-        if not produto_sel:
-            flash("Selecione um produto na lista.", "error")
-            return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+        if produto_id:
+            produto = ProdutoHospital.query.get_or_404(produto_id)
+        else:
+            produto = ProdutoHospital(hospital_id=hospital_id)
+            db.session.add(produto)
 
-        p = ProdutoHospital(
-            hospital_id=hospital_id,
-            nome_hospital=hospital.nome_hospital,
-            marca_planilha=marca_sel,
-            produto=produto_sel,
-            quantidade=int(request.form.get("quantidade") or 0),
-        )
-        db.session.add(p)
+        produto.nome_hospital = hospital.nome_hospital
+        produto.marca_planilha = request.form.get("marca_planilha")
+        produto.produto = request.form.get("produto")
+        produto.quantidade = int(request.form.get("quantidade") or 0)
+
         db.session.commit()
-        flash("Produto adicionado.", "success")
+        flash("Produto salvo.", "success")
         return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
     produtos_db = ProdutoHospital.query.filter_by(hospital_id=hospital_id).all()
+
     return render_template(
         "produtos_hospitais.html",
         hospital=hospital,
-        produtos=produtos_db,
-        catalogo=catalogo
+        produtos=produtos_db
     )
+
 
 
 @bp.route("/hospitais/<int:hospital_id>/relatorios", methods=["GET"])
@@ -511,18 +518,6 @@ def editar_contatos(hospital_id):
 
     contatos_db = Contato.query.filter_by(hospital_id=hospital_id).order_by(Contato.id.desc()).all()
     return render_template("contatos_edit.html", hospital=hospital, contatos=contatos_db)
-
-
-@bp.route("/hospitais/<int:hospital_id>/contatos/<int:contato_id>/excluir", methods=["POST"])
-def excluir_contato(hospital_id, contato_id):
-    c = Contato.query.get_or_404(contato_id)
-    if c.hospital_id != hospital_id:
-        flash("Contato não pertence a este hospital.", "danger")
-        return redirect(url_for("main.editar_contatos", hospital_id=hospital_id))
-    db.session.delete(c)
-    db.session.commit()
-    flash("Contato removido.", "success")
-    return redirect(url_for("main.editar_contatos", hospital_id=hospital_id))
 
 
 # ======================================================

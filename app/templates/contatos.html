@@ -1,47 +1,51 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="container">
 
-  <h1>Contatos – {{ hospital.nome_hospital }}</h1>
+<div class="card">
 
-  <a class="btn secondary" href="{{ url_for('main.hospitais') }}">
-    ⬅ Voltar
-  </a>
+<h1>Contatos – {{ hospital.nome_hospital }}</h1>
 
-  <hr>
+<a class="btn secondary"
+   href="{{ url_for('main.hospitais') }}">
+   ⬅ Voltar
+</a>
 
-  {% if contatos|length == 0 %}
-    <p>Nenhum contato cadastrado.</p>
-  {% else %}
-    <table class="table" style="width:100%; border-collapse:separate; border-spacing: 0 8px;">
-      <thead>
-        <tr>
-          <th style="width:40%;">Nome</th>
-          <th style="width:30%;">Cargo</th>
-          <th style="width:30%;">Telefone</th>
-        </tr>
-      </thead>
+<hr>
 
-      <tbody>
-        {% for c in contatos %}
-        <tr style="background:#fafafa;">
-          <td style="padding:10px 14px;">
-            {{ c.nome_contato }}
-          </td>
+<h2>Novo / Editar Contato</h2>
 
-          <td style="padding:10px 14px;">
-            {{ c.cargo or "-" }}
-          </td>
+<form method="POST">
+  <input type="hidden" name="contato_id" id="contato_id">
 
-          <td style="padding:10px 14px;">
-            {{ c.telefone or "-" }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+  <label>Nome</label>
+  <input type="text" name="nome_contato" required>
+
+  <label>Cargo</label>
+  <input type="text" name="cargo">
+
+  <label>Telefone</label>
+  <input type="text" name="telefone">
+
+  <button class="btn">Salvar</button>
+</form>
+
+<hr>
+
+<h2>Contatos cadastrados</h2>
+
+{% for c in contatos %}
+  <div class="card" style="margin-bottom:10px;">
+    <b>{{ c.nome_contato }}</b><br>
+    {{ c.cargo }}<br>
+    {{ c.telefone }}
+
+    <div style="margin-top:8px;">
+      <form method="POST" action="{{ url_for('main.excluir_contato', contato_id=c.id) }}" style="display:inline;">
+        <button class="btn danger">Excluir</button>
+      </form>
+    </div>
+  </div>
+{% endfor %}
 
 </div>
 {% endblock %}
