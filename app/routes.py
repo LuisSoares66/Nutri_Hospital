@@ -483,3 +483,112 @@ def reset_db():
     return redirect(url_for("main.admin_panel"))
 
 
+# ======================================================
+# EDITAR CONTATOS (lista + adicionar + excluir)
+# ======================================================
+@bp.route("/hospitais/<int:hospital_id>/contatos/editar", methods=["GET", "POST"])
+def editar_contatos(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+
+    if request.method == "POST":
+        c = Contato(
+            hospital_id=hospital_id,
+            hospital_nome=hospital.nome_hospital,
+            nome_contato=(request.form.get("nome_contato") or "").strip(),
+            cargo=request.form.get("cargo"),
+            telefone=request.form.get("telefone"),
+        )
+        if c.nome_contato:
+            db.session.add(c)
+            db.session.commit()
+            flash("Contato adicionado.", "success")
+        return redirect(url_for("main.editar_contatos", hospital_id=hospital_id))
+
+    contatos_db = Contato.query.filter_by(hospital_id=hospital_id).order_by(Contato.id.desc()).all()
+    return render_template("contatos_edit.html", hospital=hospital, contatos=contatos_db)
+
+
+@bp.route("/hospitais/<int:hospital_id>/contatos/<int:contato_id>/excluir", methods=["POST"])
+def excluir_contato(hospital_id, contato_id):
+    c = Contato.query.get_or_404(contato_id)
+    if c.hospital_id != hospital_id:
+        flash("Contato não pertence a este hospital.", "danger")
+        return redirect(url_for("main.editar_contatos", hospital_id=hospital_id))
+    db.session.delete(c)
+    db.session.commit()
+    flash("Contato removido.", "success")
+    return redirect(url_for("main.editar_contatos", hospital_id=hospital_id))
+
+
+# ======================================================
+# EDITAR DADOS DO HOSPITAL (form único)
+# ======================================================
+@bp.route("/hospitais/<int:hospital_id>/dados/editar", methods=["GET", "POST"])
+def editar_dados_hospital(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+    dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
+
+    if request.method == "POST":
+        if not dados:
+            dados = DadosHospital(hospital_id=hospital_id)
+            db.session.add(dados)
+
+        dados.especialidade = request.form.get("especialidade")
+        dados.leitos = request.form.get("leitos")
+        dados.leitos_uti = request.form.get("leitos_uti")
+        dados.fatores_decisorios = request.form.get("fatores_decisorios")
+        dados.prioridades_atendimento = request.form.get("prioridades_atendimento")
+        dados.certificacao = request.form.get("certificacao")
+        dados.emtn = request.form.get("emtn")
+        dados.emtn_membros = request.form.get("emtn_membros")
+
+        db.session.commit()
+        flash("Dados atualizados.", "success")
+        return redirect(url_for("main.editar_dados_hospital", hospital_id=hospital_id))
+
+    return render_template("dados_hospitais_edit.html", hospital=hospital, dados=dados)
+
+
+# ======================================================
+# EDITAR PRODUTOS (lista + adicionar + excluir)
+# ======================================================
+@bp.route("/hospitais/<int:hospital_id>/produtos/editar", methods=["GET", "POST"])
+def editar_produtos_hospital(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+
+    if request.method == "POST":
+        produto = (request.form.get("produto") or "").strip()
+        qtd = request.form.get("quantidade") or "0"
+        try:
+            qtd = int(qtd)
+        except:
+            qtd = 0
+
+        if produto:
+            p = ProdutoHospital(
+                hospital_id=hospital_id,
+                nome_hospital=hospital.nome_hospital,
+                marca_planilha=request.form.get("marca_planilha"),
+                produto=produto,
+                quantidade=qtd,
+            )
+            db.session.add(p)
+            db.session.commit()
+            flash("Produto adicionado.", "success")
+
+        return redirect(url_for("main.editar_produtos_hospital", hospital_id=hospital_id))
+
+    produtos_db = ProdutoHospital.query.filter_by(hospital_id=hospital_id).order_by(ProdutoHospital.id.desc()).all()
+    return render_template("produtos_hospitais_edit.html", hospital=hospital, produtos=produtos_db)
+
+
+@bp.route("/hospitais/<int:hospital_id>/produtos/<int:produto_id>/excluir", methods=["POST"])
+def excluir_produto(hospital_id, produto_id):
+    p = ProdutoHospital.query.get_or_404(produto_id)
+    if p.hospital_id != hospital_id:
+        flash("Produto não pertence a este hospital.", "danger")
+        return redirect(url_for("main.editar_produtos_hospital", hospital_id=hospital_id))
+    db.session.delete(p)
+    db.session.commit()
+    flash("Produto removido.", "success")
+    return redirect(url_for("main.editar_produtos_hospital", hospital_id=hospital_id))

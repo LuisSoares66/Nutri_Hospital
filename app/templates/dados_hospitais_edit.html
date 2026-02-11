@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1>Editar Dados – {{ hospital.nome_hospital }}</h1>
+
+  <div class="row" style="margin-bottom:12px;">
+    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+    <a class="btn secondary" href="{{ url_for('main.dados_hospital', hospital_id=hospital.id) }}">👁 Ver (somente leitura)</a>
+  </div>
+
+  <div class="card">
+    <form method="POST" class="grid">
+      <div>
+        <label>Especialidade</label>
+        <textarea name="especialidade">{{ dados.especialidade if dados else "" }}</textarea>
+      </div>
+      <div>
+        <label>Leitos</label>
+        <input name="leitos" value="{{ dados.leitos if dados else '' }}">
+        <label>Leitos UTI</label>
+        <input name="leitos_uti" value="{{ dados.leitos_uti if dados else '' }}">
+      </div>
+
+      <div>
+        <label>Fatores decisórios</label>
+        <textarea name="fatores_decisorios">{{ dados.fatores_decisorios if dados else "" }}</textarea>
+      </div>
+      <div>
+        <label>Prioridades atendimento</label>
+        <textarea name="prioridades_atendimento">{{ dados.prioridades_atendimento if dados else "" }}</textarea>
+      </div>
+
+      <div>
+        <label>Certificação</label>
+        <textarea name="certificacao">{{ dados.certificacao if dados else "" }}</textarea>
+      </div>
+      <div>
+        <label>EMTN</label>
+        <input name="emtn" value="{{ dados.emtn if dados else '' }}">
+        <label>Membros EMTN</label>
+        <textarea name="emtn_membros">{{ dados.emtn_membros if dados else "" }}</textarea>
+      </div>
+
+      <div style="grid-column:1/-1;">
+        <button class="btn" type="submit">Salvar alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
