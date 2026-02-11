@@ -61,21 +61,34 @@ def hospitais():
 @bp.route("/hospitais/novo", methods=["GET", "POST"])
 def novo_hospital():
     if request.method == "POST":
+        nome = (request.form.get("nome_hospital") or "").strip()
+
+        if not nome:
+            flash("Informe o nome do hospital.", "danger")
+            return redirect(url_for("main.novo_hospital"))
+
         h = Hospital(
-            nome_hospital=request.form.get("nome_hospital"),
-            endereco=request.form.get("endereco"),
-            numero=request.form.get("numero"),
-            complemento=request.form.get("complemento"),
-            cep=request.form.get("cep"),
-            cidade=request.form.get("cidade"),
-            estado=request.form.get("estado"),
+            nome_hospital=nome,
+            endereco=(request.form.get("endereco") or "").strip(),
+            numero=(request.form.get("numero") or "").strip(),
+            complemento=(request.form.get("complemento") or "").strip(),
+            cep=(request.form.get("cep") or "").strip(),
+            cidade=(request.form.get("cidade") or "").strip(),
+            estado=(request.form.get("estado") or "").strip(),
         )
-        db.session.add(h)
-        db.session.commit()
-        flash("Hospital cadastrado com sucesso!", "success")
-        return redirect(url_for("main.hospitais"))
+
+        try:
+            db.session.add(h)
+            db.session.commit()
+            flash("Hospital cadastrado com sucesso!", "success")
+            return redirect(url_for("main.hospitais"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar hospital: {e}", "danger")
+            return redirect(url_for("main.novo_hospital"))
 
     return render_template("hospital_form.html")
+
 
 @bp.route("/hospitais/<int:hospital_id>/excluir", methods=["POST"])
 @admin_required
