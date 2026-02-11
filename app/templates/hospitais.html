@@ -5,7 +5,7 @@
 
   <h1>Hospitais</h1>
 
-  <!-- AÇÕES DO TOPO (APARECE UMA VEZ) -->
+  <!-- AÇÕES DO TOPO (NÃO USA 'h') -->
   <div class="actions" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
 
     <a class="btn primary" href="{{ url_for('main.novo_hospital') }}">
@@ -15,11 +15,6 @@
     <a class="btn secondary" href="{{ url_for('main.relatorios_geral') }}">
       📊 Relatórios (Geral)
     </a>
-
-    <a class="btn secondary" href="{{ url_for('main.hospital_info', hospital_id=h.id) }}">
-      INFO
-    </a>
-
 
     {% if session.get("is_admin") %}
       <a class="btn secondary" href="{{ url_for('main.admin_panel') }}">🔒 Admin</a>
@@ -37,7 +32,7 @@
         <tr>
           <th style="width:80px;">ID</th>
           <th>Nome do Hospital</th>
-          <th style="width:520px;">Ações</th>
+          <th style="width:620px;">Ações</th>
         </tr>
       </thead>
 
@@ -47,49 +42,42 @@
           <td>{{ h.id }}</td>
           <td>{{ h.nome_hospital }}</td>
 
-          <td style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+          <td style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
 
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <a class="btn secondary" href="{{ url_for('main.hospital_info', hospital_id=h.id) }}">INFO</a>
-            </div>
-            <!-- CONTATOS -->
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <a class="btn secondary" href="{{ url_for('main.hospital_info', hospital_id=h.id) }}">INFO</a>
-              <a class="btn secondary" href="{{ url_for('main.contatos', hospital_id=h.id) }}">CONTATOS</a>
-              <a class="btn secondary" href="{{ url_for('main.editar_contatos', hospital_id=h.id) }}">✏️ EDITAR</a>
-            </div>
+            <!-- INFO (AGORA DENTRO DO LOOP) -->
+            <a class="btn secondary" href="{{ url_for('main.hospital_info', hospital_id=h.id) }}">
+              INFO
+            </a>
 
-            <!-- DADOS -->
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <a class="btn secondary" href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">DADOS</a>
-              <a class="btn secondary" href="{{ url_for('main.editar_dados_hospital', hospital_id=h.id) }}">✏️ EDITAR</a>
-            </div>
+            <a class="btn secondary" href="{{ url_for('main.contatos', hospital_id=h.id) }}">
+              CONTATOS
+            </a>
 
-            <!-- PRODUTOS -->
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">PRODUTOS</a>
-              <a class="btn secondary" href="{{ url_for('main.editar_produtos_hospital', hospital_id=h.id) }}">✏️ EDITAR</a>
-            </div>
+            <a class="btn secondary" href="{{ url_for('main.dados_hospital', hospital_id=h.id) }}">
+              DADOS
+            </a>
 
-            <!-- RELATÓRIOS -->
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=h.id) }}">RELATÓRIOS</a>
-            </div>
+            <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=h.id) }}">
+              PRODUTOS
+            </a>
+
+            <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=h.id) }}">
+              RELATÓRIOS
+            </a>
 
             <!-- APAGAR (SÓ ADMIN) -->
             {% if session.get("is_admin") %}
-              <div style="display:flex; flex-direction:column; gap:6px;">
-                <form method="POST"
-                      action="{{ url_for('main.excluir_hospital', hospital_id=h.id) }}"
-                      onsubmit="return confirm('Apagar APENAS este hospital e todos os dados relacionados?');"
-                      style="display:inline;">
-                  <button class="btn danger" type="submit">🗑 APAGAR</button>
-                </form>
-              </div>
+              <form method="POST"
+                    action="{{ url_for('main.excluir_hospital', hospital_id=h.id) }}"
+                    onsubmit="return confirm('Apagar APENAS este hospital e todos os dados relacionados?');"
+                    style="display:inline;">
+                <button class="btn danger" type="submit">
+                  🗑 APAGAR
+                </button>
+              </form>
             {% endif %}
 
           </td>
-
         </tr>
         {% endfor %}
       </tbody>

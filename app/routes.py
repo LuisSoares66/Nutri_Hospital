@@ -627,3 +627,4 @@ def hospital_info(hospital_id):
 
     return render_template("hospital_info.html", hospital=hospital)
 
+
