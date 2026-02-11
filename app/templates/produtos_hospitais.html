@@ -1,91 +1,87 @@
 {% extends "base.html" %}
 {% block content %}
-
 <div class="container">
-  <h1>Produtos – {{ hospital.nome_hospital }}</h1>
 
-  <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+  <h1>PRODUTOS – {{ hospital.nome_hospital }}</h1>
 
-  <hr>
+  <div class="btns" style="margin-bottom:12px;">
+    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+  </div>
 
-  <h2>Adicionar produto</h2>
+  <div class="card">
+    <h2>{% if produto_edit %}Editar produto{% else %}Adicionar produto{% endif %}</h2>
 
-  <form method="POST">
-    <div style="max-width:700px; display:grid; gap:12px;">
+    <form method="POST" action="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">
+      <input type="hidden" name="produto_id" value="{{ produto_edit.id if produto_edit else '' }}">
 
-      <!-- MARCA -->
-      <label><b>Marca</b></label>
-      <select id="marcaSelect" name="marca_planilha" required>
-        <option value="">-- selecione a marca --</option>
-        {% for m in catalogo | map(attribute='marca') | unique %}
-          <option value="{{ m }}">{{ m }}</option>
-        {% endfor %}
+      <label>Marca</label>
+      <select name="marca_planilha">
+        {% set marca = produto_edit.marca_planilha if produto_edit else '' %}
+        <option value="" {% if marca=='' %}selected{% endif %}>—</option>
+        <option value="PRODIET" {% if marca=='PRODIET' %}selected{% endif %}>PRODIET</option>
+        <option value="NESTLÉ" {% if marca=='NESTLÉ' %}selected{% endif %}>NESTLÉ</option>
+        <option value="DANONE" {% if marca=='DANONE' %}selected{% endif %}>DANONE</option>
+        <option value="FRESENIUS" {% if marca=='FRESENIUS' %}selected{% endif %}>FRESENIUS</option>
       </select>
 
-      <!-- PRODUTOS (ROLAGEM) -->
-      <label><b>Produto</b></label>
-      <select id="produtoSelect" name="produto" size="10" required>
-        <!-- preenchido via JS -->
-      </select>
+      <label>Produto</label>
+      <input name="produto" value="{{ produto_edit.produto if produto_edit else '' }}" required>
 
-      <label><b>Quantidade</b></label>
-      <input type="number" name="quantidade" min="0" value="0" required>
+      <label>Quantidade</label>
+      <input name="quantidade" value="{{ produto_edit.quantidade if produto_edit else '' }}" placeholder="0">
 
-      <button class="btn primary">+ Adicionar</button>
-    </div>
-  </form>
+      <div class="btns">
+        <button class="btn" type="submit">Salvar</button>
 
-  <hr>
+        {% if produto_edit %}
+          <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">
+            Cancelar edição
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
 
-  <h2>Produtos cadastrados</h2>
+  <div class="card" style="margin-top:14px;">
+    <h2>Produtos cadastrados</h2>
 
-  {% if produtos %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Marca</th>
-          <th>Produto</th>
-          <th>Qtd</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in produtos %}
-        <tr>
-          <td>{{ p.marca_planilha }}</td>
-          <td>{{ p.produto }}</td>
-          <td>{{ p.quantidade }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>Nenhum produto cadastrado.</p>
-  {% endif %}
+    {% if produtos %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Marca</th>
+            <th>Produto</th>
+            <th>Qtd</th>
+            <th style="width:220px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in produtos %}
+          <tr>
+            <td>{{ p.marca_planilha or '' }}</td>
+            <td>{{ p.produto }}</td>
+            <td>{{ p.quantidade }}</td>
+            <td style="display:flex; gap:8px; flex-wrap:wrap;">
+              <a class="btn secondary"
+                 href="{{ url_for('main.produtos_hospital', hospital_id=hospital.id, edit_id=p.id) }}">
+                Editar
+              </a>
+
+              <form method="POST"
+                    action="{{ url_for('main.excluir_produto', hospital_id=hospital.id, produto_id=p.id) }}"
+                    onsubmit="return confirm('Excluir este produto?');"
+                    style="display:inline;">
+                <button class="btn danger" type="submit">Excluir</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>Nenhum produto cadastrado.</p>
+    {% endif %}
+  </div>
+
 </div>
-
-<!-- ========================= -->
-<!-- SCRIPT DE FILTRO -->
-<!-- ========================= -->
-<script>
-  const catalogo = {{ catalogo | tojson }};
-  const marcaSelect = document.getElementById("marcaSelect");
-  const produtoSelect = document.getElementById("produtoSelect");
-
-  marcaSelect.addEventListener("change", function () {
-    const marca = this.value;
-    produtoSelect.innerHTML = "";
-
-    if (!marca) return;
-
-    const filtrados = catalogo.filter(p => p.marca === marca);
-
-    filtrados.forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p.produto;
-      opt.textContent = p.produto;
-      produtoSelect.appendChild(opt);
-    });
-  });
-</script>
-
 {% endblock %}
