@@ -250,21 +250,60 @@ def load_produtos_hospitais_from_excel(data_dir: str) -> List[Dict[str, Any]]:
 # ======================================================
 # CATÁLOGO DE PRODUTOS (OPCIONAL)
 # ======================================================
-def load_catalogo_produtos_from_excel(data_dir: str) -> List[Dict[str, Any]]:
+import os
+import pandas as pd
+
+def load_catalogo_produtos_from_excel(data_dir: str = "data"):
     """
-    Opcional (se você tiver um catálogo separado em data/catalogo_produtos.xlsx).
-    Retorna lista de dict com colunas livres (mantém o que tiver).
+    Lê data/produtos.xlsx e retorna lista de dict:
+      [{"marca_planilha": "...", "produto": "..."}, ...]
+
+    Aceita variações de nome de coluna (Marca/Produto, marca_planilha/produto etc.).
     """
-    path = _safe_path(data_dir, "catalogo_produtos.xlsx")
-    df = _read_xlsx(path)
-    if df.empty:
+    path = os.path.join(data_dir, "produtos.xlsx")
+    if not os.path.exists(path):
         return []
 
-    out: List[Dict[str, Any]] = []
-    for _, r in df.iterrows():
-        d = {str(k).strip(): _strip(v) for k, v in r.to_dict().items()}
-        # ignora linha vazia
-        if not any(d.values()):
+    df = pd.read_excel(path, dtype=str).fillna("")
+
+    # tenta achar colunas
+    cols = {c.strip().lower(): c for c in df.columns}
+
+    def pick(*names):
+        for n in names:
+            if n in cols:
+                return cols[n]
+        return None
+
+    col_marca = pick("marca", "marca_planilha", "marca planilha", "fabricante", "fornecedor", "brand")
+    col_prod  = pick("produto", "descricao", "descrição", "nome_produto", "nome produto", "item", "product")
+
+    # fallback: tenta achar pelo "contém"
+    if not col_marca:
+        for c in df.columns:
+            lc = c.strip().lower()
+            if "marca" in lc:
+                col_marca = c
+                break
+    if not col_prod:
+        for c in df.columns:
+            lc = c.strip().lower()
+            if "produto" in lc or "descr" in lc:
+                col_prod = c
+                break
+
+    if not col_marca or not col_prod:
+        # não achou as colunas necessárias
+        return []
+
+    out = []
+    for _, row in df.iterrows():
+        marca = (row.get(col_marca, "") or "").strip().upper()
+        prod  = (row.get(col_prod, "") or "").strip()
+
+        if not marca or not prod:
             continue
-        out.append(d)
+
+        out.append({"marca_planilha": marca, "produto": prod})
+
     return out

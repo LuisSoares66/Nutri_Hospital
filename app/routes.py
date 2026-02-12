@@ -842,31 +842,16 @@ def fix_schema_dados():
 
 from flask import jsonify
 
+
 @bp.route("/api/catalogo_produtos", methods=["GET"])
 def api_catalogo_produtos():
-    """
-    Retorna lista de produtos do catálogo filtrado por marca.
-    Espera que load_catalogo_produtos_from_excel('data') devolva lista de dicts com chaves:
-      - 'marca' (ou 'marca_planilha')
-      - 'produto'
-    """
-    data_dir = "data"
     marca = (request.args.get("marca") or "").strip().upper()
+    rows = load_catalogo_produtos_from_excel("data") or []
 
-    rows = load_catalogo_produtos_from_excel(data_dir) or []
-
-    produtos = []
-    for r in rows:
-        m = (r.get("marca") or r.get("marca_planilha") or "").strip().upper()
-        p = (r.get("produto") or "").strip()
-        if not p:
-            continue
-        if marca and m != marca:
-            continue
-        produtos.append(p)
-
+    produtos = [r["produto"] for r in rows if (r.get("marca_planilha") or "").strip().upper() == marca]
     # remove duplicados e ordena
-    produtos = sorted(list(dict.fromkeys(produtos)))
+    produtos = sorted(list(dict.fromkeys([p.strip() for p in produtos if p.strip()])))
 
     return jsonify({"marca": marca, "produtos": produtos})
+
 
