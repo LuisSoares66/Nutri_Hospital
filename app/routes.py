@@ -159,8 +159,12 @@ from app.excel_loader import (
     load_contatos_from_excel,
     load_dados_hospitais_from_excel,
     load_produtos_hospitais_from_excel,
-    load_catalogo_produtos_from_excel,  # se você usa em algum lugar
+
+    # ✅ catálogo por abas do data/produtos.xlsx
+    load_marcas_from_produtos_excel,
+    load_produtos_by_marca_from_produtos_excel,
 )
+
 
 bp = Blueprint("main", __name__)
 
@@ -406,40 +410,34 @@ def dados_hospital(hospital_id):
 def produtos_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
+    # =======================
+    # POST (salvar produto)
+    # =======================
     if request.method == "POST":
         try:
-            produto_id_raw = (request.form.get("produto_id") or "").strip()
+            produto_nome = (request.form.get("produto") or "").strip()
+            marca = (request.form.get("marca_planilha") or "").strip()
 
-            # EDITAR ou NOVO
-            if produto_id_raw:
-                try:
-                    produto_id = int(produto_id_raw)
-                except:
-                    produto_id = None
-
-                if not produto_id:
-                    flash("ID do produto inválido.", "error")
-                    return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
-
-                produto = ProdutoHospital.query.get_or_404(produto_id)
-                if produto.hospital_id != hospital_id:
-                    flash("Produto não pertence a este hospital.", "error")
-                    return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
-            else:
-                produto = ProdutoHospital(hospital_id=hospital_id)
-                db.session.add(produto)
-
-            produto.nome_hospital = hospital.nome_hospital
-            produto.marca_planilha = (request.form.get("marca_planilha") or "").strip()
-            produto.produto = (request.form.get("produto") or "").strip()
+            if not produto_nome:
+                flash("Selecione um produto.", "error")
+                return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
             qtd_raw = (request.form.get("quantidade") or "").strip()
             try:
-                produto.quantidade = int(float(qtd_raw)) if qtd_raw else 0
+                quantidade = int(float(qtd_raw)) if qtd_raw else 0
             except:
-                produto.quantidade = 0
+                quantidade = 0
 
+            p = ProdutoHospital(
+                hospital_id=hospital_id,
+                nome_hospital=hospital.nome_hospital,
+                marca_planilha=marca,
+                produto=produto_nome,
+                quantidade=quantidade,
+            )
+            db.session.add(p)
             db.session.commit()
+
             flash("Produto salvo.", "success")
 
         except Exception as e:
@@ -448,15 +446,17 @@ def produtos_hospital(hospital_id):
 
         return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
+    # =======================
+    # GET (tela)
+    # =======================
     produtos_db = (
         ProdutoHospital.query
         .filter_by(hospital_id=hospital_id)
         .order_by(ProdutoHospital.id.desc())
         .all()
     )
-    rows = load_catalogo_produtos_from_excel("data") or []
-    marcas = sorted({(r.get("marca") or r.get("marca_planilha") or "").strip().upper() for r in rows if (r.get("marca") or r.get("marca_planilha"))})
 
+    # ✅ marcas = abas do data/produtos.xlsx
     marcas = load_marcas_from_produtos_excel("data")
 
     return render_template(
@@ -465,8 +465,6 @@ def produtos_hospital(hospital_id):
         produtos=produtos_db,
         marcas_catalogo=marcas
     )
-
-
 
 
 @bp.route("/hospitais/<int:hospital_id>/produtos/<int:produto_id>/excluir", methods=["POST"])
@@ -485,6 +483,7 @@ def excluir_produto(hospital_id, produto_id):
         flash(f"Erro ao remover produto: {e}", "error")
 
     return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+
 
 
 @bp.route("/hospitais/<int:hospital_id>/contatos/<int:contato_id>/excluir", methods=["POST"])
@@ -840,25 +839,18 @@ def fix_schema_dados():
 from flask import jsonify
 
 
-@bp.route("/api/catalogo_produtos", methods=["GET"])
-def api_catalogo_produtos():
-    marca = (request.args.get("marca") or "").strip().upper()
-    rows = load_catalogo_produtos_from_excel("data") or []
-
-    produtos = [r["produto"] for r in rows if (r.get("marca_planilha") or "").strip().upper() == marca]
-    # remove duplicados e ordena
-    produtos = sorted(list(dict.fromkeys([p.strip() for p in produtos if p.strip()])))
-
-    return jsonify({"marca": marca, "produtos": produtos})
-
-from flask import jsonify
-from app.excel_loader import load_marcas_from_produtos_excel, load_produtos_by_marca_from_produtos_excel
-
-@bp.route("/api/catalogo_produtos", methods=["GET"])
+@bp.route("/api/catalogo_produtos", methods=["GET"], endpoint="catalogo_produtos")
 def api_catalogo_produtos():
     marca = (request.args.get("marca") or "").strip()
+    if not marca:
+        return jsonify({"marca": "", "produtos": []})
+
     produtos = load_produtos_by_marca_from_produtos_excel(marca, "data")
     return jsonify({"marca": marca, "produtos": produtos})
+
+
+
+
 
 
 

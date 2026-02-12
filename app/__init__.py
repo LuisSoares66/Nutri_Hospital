@@ -1,26 +1,23 @@
+from app import db
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from config import Config
-
-db = SQLAlchemy()
-migrate = Migrate()
+#from app.extensions import db  # se você usa db em extensions
+# ou: from app import db  (ajuste conforme seu projeto)
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # init extensões
     db.init_app(app)
-    migrate.init_app(app, db)
 
-    # importa models depois do db existir
-    from app import models  # noqa: F401
-
-    # Blueprints
-    from app.routes import bp
-    app.register_blueprint(bp)
-
+    # ✅ importa blueprints SÓ aqui dentro, UMA vez
+    from app.routes import bp as main_bp
     from app.auth import auth_bp
-    app.register_blueprint(auth_bp)  # ou url_prefix=""
+
+    # ✅ registra uma vez cada
+    app.register_blueprint(main_bp)      # sem prefixo
+    app.register_blueprint(auth_bp)      # sem prefixo
 
     return app
+

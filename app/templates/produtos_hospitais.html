@@ -1,3 +1,4 @@
+{# app/templates/produtos_hospitais.html #}
 {% extends "base.html" %}
 {% block content %}
 
@@ -21,32 +22,30 @@
 
       <form method="POST" action="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">
         <input type="hidden" name="produto_id" value="">
+        <input type="hidden" name="marca_planilha" id="marca_planilha" value="">
 
         <div class="row g-3">
-          <!-- MARCA (rolagem) -->
+          <!-- MARCAS (abas do Excel) -->
           <div class="col-md-4">
-            <label class="form-label">Marca (Catálogo)</label>
-            <select id="marca_select" class="form-select" size="10">
+            <label class="form-label">Marca (abas do produtos.xlsx)</label>
+            <select id="marca_select" class="form-select" size="12">
               {% for m in marcas_catalogo %}
                 <option value="{{ m }}">{{ m }}</option>
               {% endfor %}
             </select>
-            <small class="text-muted">Clique em uma marca para carregar os produtos.</small>
-
-            <!-- campo REAL enviado no POST -->
-            <input type="hidden" name="marca_planilha" id="marca_planilha" value="">
+            <small class="text-muted">Selecione a marca para carregar os produtos dessa aba.</small>
           </div>
 
-          <!-- PRODUTO (rolagem) -->
+          <!-- PRODUTOS (coluna PRODUTO da aba selecionada) -->
           <div class="col-md-5">
-            <label class="form-label">Produto (Catálogo)</label>
-            <select id="produto_select" class="form-select" size="10">
+            <label class="form-label">Produto (coluna PRODUTO)</label>
+            <select id="produto_select" class="form-select" size="12">
               <option value="" disabled>Selecione uma marca…</option>
             </select>
-            <small class="text-muted">Clique no produto para preencher o campo abaixo.</small>
+            <small class="text-muted">Selecione o produto para preencher o campo abaixo.</small>
           </div>
 
-          <!-- CAMPOS DO FORM -->
+          <!-- FORM -->
           <div class="col-md-3">
             <label class="form-label">Produto selecionado</label>
             <input type="text" class="form-control" name="produto" id="produto_input" required>
@@ -57,6 +56,11 @@
             <button class="btn btn-success w-100 mt-3" type="submit">
               Salvar
             </button>
+
+            <a class="btn btn-outline-secondary w-100 mt-2"
+               href="{{ url_for('main.editar_produtos_hospital', hospital_id=hospital.id) }}">
+              Editar/Remover
+            </a>
           </div>
         </div>
       </form>
@@ -64,17 +68,17 @@
     </div>
   </div>
 
-  <!-- LISTA SALVA NO HOSPITAL -->
+  <!-- LISTA CADASTRADA -->
   <div class="card shadow-sm">
     <div class="card-body">
       <h5 class="mb-3">Produtos cadastrados</h5>
 
       <table class="table table-sm table-hover align-middle">
-        <thead>
+        <thead class="table-light">
           <tr>
             <th>Marca</th>
             <th>Produto</th>
-            <th>Qtd</th>
+            <th style="width:120px;">Qtd</th>
           </tr>
         </thead>
         <tbody>
@@ -96,40 +100,56 @@
 </div>
 
 <script>
-  const marcaSelect = document.getElementById("marca_select");
+  const marcaSelect  = document.getElementById("marca_select");
   const produtoSelect = document.getElementById("produto_select");
   const produtoInput = document.getElementById("produto_input");
-  const marcaHidden = document.getElementById("marca_planilha");
+  const marcaHidden  = document.getElementById("marca_planilha");
 
-  async function carregarProdutosDaMarca(marca) {
+  async function carregarProdutos(marca) {
     produtoSelect.innerHTML = `<option value="" disabled>Carregando…</option>`;
-    const resp = await fetch(`/api/catalogo_produtos?marca=${encodeURIComponent(marca)}`);
-    const data = await resp.json();
+    try {
+      const resp = await fetch(`/api/catalogo_produtos?marca=${encodeURIComponent(marca)}`);
+      const data = await resp.json();
 
-    produtoSelect.innerHTML = "";
-    if (!data.produtos || data.produtos.length === 0) {
-      produtoSelect.innerHTML = `<option value="" disabled>Nenhum produto nessa marca</option>`;
-      return;
-    }
+      produtoSelect.innerHTML = "";
+      const lista = (data && data.produtos) ? data.produtos : [];
 
-    for (const p of data.produtos) {
-      const opt = document.createElement("option");
-      opt.value = p;
-      opt.textContent = p;
-      produtoSelect.appendChild(opt);
+      if (!lista.length) {
+        produtoSelect.innerHTML = `<option value="" disabled>Nenhum produto nessa marca</option>`;
+        return;
+      }
+
+      for (const p of lista) {
+        const opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = p;
+        produtoSelect.appendChild(opt);
+      }
+    } catch (e) {
+      produtoSelect.innerHTML = `<option value="" disabled>Erro ao carregar produtos</option>`;
     }
   }
 
   marcaSelect.addEventListener("change", (e) => {
     const marca = e.target.value || "";
-    marcaHidden.value = marca; // envia no POST
-    produtoInput.value = "";   // limpa
-    carregarProdutosDaMarca(marca);
+    marcaHidden.value = marca;
+    produtoInput.value = "";
+    carregarProdutos(marca);
   });
 
   produtoSelect.addEventListener("change", (e) => {
     const prod = e.target.value || "";
-    produtoInput.value = prod; // preenche input
+    produtoInput.value = prod;
+  });
+
+  // opcional: já selecionar a primeira marca automaticamente
+  window.addEventListener("DOMContentLoaded", () => {
+    if (marcaSelect.options.length > 0) {
+      marcaSelect.selectedIndex = 0;
+      const marca = marcaSelect.value;
+      marcaHidden.value = marca;
+      carregarProdutos(marca);
+    }
   });
 </script>
 

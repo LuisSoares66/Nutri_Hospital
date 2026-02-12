@@ -1,366 +1,287 @@
+# app/excel_loader.py
 import os
-from typing import List, Dict, Any, Optional
+import re
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
 
-def _safe_path(data_dir: str, filename: str) -> str:
-    return os.path.join(data_dir, filename)
+def _safe_str(v: Any) -> str:
+    if v is None:
+        return ""
+    s = str(v).strip()
+    # evita "nan"
+    return "" if s.lower() == "nan" else s
 
 
-def _read_xlsx(path: str) -> pd.DataFrame:
-    if not os.path.exists(path):
-        return pd.DataFrame()
-    # lê tudo como string pra evitar "342.0" e bagunça
-    df = pd.read_excel(path, dtype=str)
-    # remove colunas "Unnamed: x"
-    df = df.loc[:, ~df.columns.astype(str).str.startswith("Unnamed")]
-    # strip nos nomes de colunas
+def _to_int(v: Any, default: int = 0) -> int:
+    s = _safe_str(v)
+    if not s:
+        return default
+    try:
+        return int(float(s))
+    except Exception:
+        return default
+
+
+def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
     df.columns = [str(c).strip() for c in df.columns]
     return df
 
 
-def _strip(v: Any) -> str:
-    return ("" if v is None else str(v)).strip()
-
-
-def _to_int(v: Any) -> Optional[int]:
+def _find_col(df: pd.DataFrame, exact_names_upper: List[str], contains_any: Optional[List[str]] = None) -> Optional[str]:
     """
-    Converte '342', '342.0', 342.0, ' 342 ' -> 342
-    Retorna None se vazio/inválido.
+    Encontra coluna por:
+      1) match exato (case-insensitive)
+      2) fallback por "contém" (case-insensitive)
     """
-    s = _strip(v)
-    if not s:
-        return None
-    try:
-        # trata '342.0000'
-        return int(float(s.replace(",", ".")))
-    except Exception:
+    if df is None or df.empty:
         return None
 
-
-def _find_col(df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
-    """
-    Encontra coluna pelo nome exato ou por comparação case-insensitive.
-    """
     cols = list(df.columns)
-    cols_upper = {c.upper(): c for c in cols}
+    upper_map = {str(c).strip().upper(): c for c in cols}
 
-    for cand in candidates:
-        c = cand.strip()
-        if c in cols:
-            return c
-        cu = c.upper()
-        if cu in cols_upper:
-            return cols_upper[cu]
+    for name in exact_names_upper:
+        if name.upper() in upper_map:
+            return upper_map[name.upper()]
+
+    if contains_any:
+        for c in cols:
+            cu = str(c).strip().upper()
+            for token in contains_any:
+                if token.upper() in cu:
+                    return c
 
     return None
 
 
-def _get(df_row: pd.Series, col: Optional[str], default: Any = "") -> Any:
-    if not col:
-        return default
-    return df_row.get(col, default)
-
-
 # ======================================================
-# HOSPITAIS
+# HOSPITAIS (data/hospitais.xlsx)
 # ======================================================
-def load_hospitais_from_excel(data_dir: str) -> List[Dict[str, Any]]:
+def load_hospitais_from_excel(data_dir: str = "data") -> List[Dict[str, Any]]:
     """
-    Espera data/hospitais.xlsx.
-    Retorna lista de dict:
-      {
-        "id_hospital": int,
-        "nome_hospital": str,
-        "endereco": str,
-        "numero": str,
-        "complemento": str,
-        "cep": str,
-        "cidade": str,
-        "estado": str,
-      }
+    Espera colunas típicas:
+      id_hospital, nome_hospital, endereco, numero, complemento, cep, cidade, estado
     """
-    path = _safe_path(data_dir, "hospitais.xlsx")
-    df = _read_xlsx(path)
-    if df.empty:
-        return []
-
-    c_id = _find_col(df, ["id_hospital", "id", "codigo", "cod_hospital"])
-    c_nome = _find_col(df, ["nome_hospital", "hospital", "nome", "razao_social"])
-    c_end = _find_col(df, ["endereco", "endereço", "logradouro"])
-    c_num = _find_col(df, ["numero", "número", "num"])
-    c_comp = _find_col(df, ["complemento", "compl"])
-    c_cep = _find_col(df, ["cep"])
-    c_cid = _find_col(df, ["cidade", "município", "municipio"])
-    c_uf = _find_col(df, ["estado", "uf"])
-
-    out: List[Dict[str, Any]] = []
-    for _, r in df.iterrows():
-        hid = _to_int(_get(r, c_id))
-        nome = _strip(_get(r, c_nome))
-
-        # ignora linhas vazias
-        if not hid and not nome:
-            continue
-
-        out.append(
-            {
-                "id_hospital": hid,
-                "nome_hospital": nome,
-                "endereco": _strip(_get(r, c_end)),
-                "numero": _strip(_get(r, c_num)),
-                "complemento": _strip(_get(r, c_comp)),
-                "cep": _strip(_get(r, c_cep)),
-                "cidade": _strip(_get(r, c_cid)),
-                "estado": _strip(_get(r, c_uf)),
-            }
-        )
-    return out
-
-
-# ======================================================
-# CONTATOS
-# ======================================================
-def load_contatos_from_excel(data_dir: str) -> List[Dict[str, Any]]:
-    """
-    Espera data/contatos.xlsx.
-    Retorna:
-      {
-        "id_hospital": int,
-        "hospital_nome": str,
-        "nome_contato": str,
-        "cargo": str,
-        "telefone": str
-      }
-    """
-    path = _safe_path(data_dir, "contatos.xlsx")
-    df = _read_xlsx(path)
-    if df.empty:
-        return []
-
-    c_hid = _find_col(df, ["id_hospital", "hospital_id", "id", "cod_hospital"])
-    c_hnome = _find_col(df, ["hospital_nome", "nome_hospital", "hospital", "nome"])
-    c_nome = _find_col(df, ["nome_contato", "contato", "nome", "responsavel", "responsável"])
-    c_cargo = _find_col(df, ["cargo", "funcao", "função"])
-    c_tel = _find_col(df, ["telefone", "fone", "celular", "whatsapp"])
-
-    out: List[Dict[str, Any]] = []
-    for _, r in df.iterrows():
-        nome_contato = _strip(_get(r, c_nome))
-        if not nome_contato:
-            continue
-
-        out.append(
-            {
-                "id_hospital": _to_int(_get(r, c_hid)),
-                "hospital_nome": _strip(_get(r, c_hnome)),
-                "nome_contato": nome_contato,
-                "cargo": _strip(_get(r, c_cargo)),
-                "telefone": _strip(_get(r, c_tel)),
-            }
-        )
-
-    return out
-
-
-# ======================================================
-# DADOS HOSPITAIS
-# ======================================================
-def load_dados_hospitais_from_excel(data_dir: str) -> List[Dict[str, Any]]:
-    """
-    Espera data/dadoshospitais.xlsx.
-    Retorna list[dict] com:
-      - id_hospital
-      - e o resto das colunas como texto (mantém perguntas longas)
-    """
-    path = _safe_path(data_dir, "dadoshospitais.xlsx")
-    df = _read_xlsx(path)
-    if df.empty:
-        return []
-
-    # tenta achar a coluna de id
-    c_id = _find_col(df, ["id_hospital", "hospital_id", "id", "cod_hospital"])
-
-    out: List[Dict[str, Any]] = []
-    for _, r in df.iterrows():
-        row_dict = {str(k).strip(): _strip(v) for k, v in r.to_dict().items()}
-        hid = _to_int(row_dict.get(c_id) if c_id else row_dict.get("id_hospital"))
-        row_dict["id_hospital"] = hid
-
-        # ignora linha vazia
-        if not hid and not any(v for k, v in row_dict.items() if k != "id_hospital"):
-            continue
-
-        out.append(row_dict)
-
-    return out
-
-
-# ======================================================
-# PRODUTOS POR HOSPITAL
-# ======================================================
-def load_produtos_hospitais_from_excel(data_dir: str) -> List[Dict[str, Any]]:
-    """
-    Espera data/produtoshospitais.xlsx.
-    Retorna:
-      {
-        "hospital_id": int,
-        "id_hospital": int (fallback),
-        "nome_hospital": str,
-        "marca_planilha": str,
-        "produto": str,
-        "quantidade": int
-      }
-    """
-    path = _safe_path(data_dir, "produtoshospitais.xlsx")
-    df = _read_xlsx(path)
-    if df.empty:
-        return []
-
-    c_hid = _find_col(df, ["hospital_id", "id_hospital", "id", "cod_hospital"])
-    c_nome_h = _find_col(df, ["nome_hospital", "hospital_nome", "hospital"])
-    c_marca = _find_col(df, ["marca_planilha", "marca", "fornecedor", "fabricante"])
-    c_prod = _find_col(df, ["produto", "descricao", "descrição", "item"])
-    c_qtd = _find_col(df, ["quantidade", "qtd", "qtde"])
-
-    out: List[Dict[str, Any]] = []
-    for _, r in df.iterrows():
-        produto = _strip(_get(r, c_prod))
-        if not produto:
-            continue
-
-        hid = _to_int(_get(r, c_hid))
-        qtd = _to_int(_get(r, c_qtd)) or 0
-
-        out.append(
-            {
-                "hospital_id": hid,
-                "id_hospital": hid,  # compatibilidade (se seu route buscar id_hospital)
-                "nome_hospital": _strip(_get(r, c_nome_h)),
-                "marca_planilha": _strip(_get(r, c_marca)),
-                "produto": produto,
-                "quantidade": qtd,
-            }
-        )
-
-    return out
-
-
-# ======================================================
-# CATÁLOGO DE PRODUTOS (OPCIONAL)
-# ======================================================
-import os
-import pandas as pd
-
-def load_catalogo_produtos_from_excel(data_dir: str = "data"):
-    """
-    Lê data/produtos.xlsx e retorna lista de dict:
-      [{"marca_planilha": "...", "produto": "..."}, ...]
-
-    Aceita variações de nome de coluna (Marca/Produto, marca_planilha/produto etc.).
-    """
-    path = os.path.join(data_dir, "produtos.xlsx")
+    path = os.path.join(data_dir, "hospitais.xlsx")
     if not os.path.exists(path):
         return []
 
     df = pd.read_excel(path, dtype=str).fillna("")
+    df = _normalize_columns(df)
 
-    # tenta achar colunas
-    cols = {c.strip().lower(): c for c in df.columns}
+    # tenta localizar colunas
+    col_id = _find_col(df, ["ID_HOSPITAL", "ID"], ["ID_HOSP"])
+    col_nome = _find_col(df, ["NOME_HOSPITAL", "HOSPITAL", "NOME"], ["NOME"])
+    col_end = _find_col(df, ["ENDERECO", "ENDEREÇO"], ["ENDERE"])
+    col_num = _find_col(df, ["NUMERO", "NÚMERO"], ["NUM"])
+    col_comp = _find_col(df, ["COMPLEMENTO"], ["COMPLE"])
+    col_cep = _find_col(df, ["CEP"], ["CEP"])
+    col_cid = _find_col(df, ["CIDADE"], ["CIDAD"])
+    col_uf = _find_col(df, ["ESTADO", "UF"], ["UF", "ESTAD"])
 
-    def pick(*names):
-        for n in names:
-            if n in cols:
-                return cols[n]
-        return None
-
-    col_marca = pick("marca", "marca_planilha", "marca planilha", "fabricante", "fornecedor", "brand")
-    col_prod  = pick("produto", "descricao", "descrição", "nome_produto", "nome produto", "item", "product")
-
-    # fallback: tenta achar pelo "contém"
-    if not col_marca:
-        for c in df.columns:
-            lc = c.strip().lower()
-            if "marca" in lc:
-                col_marca = c
-                break
-    if not col_prod:
-        for c in df.columns:
-            lc = c.strip().lower()
-            if "produto" in lc or "descr" in lc:
-                col_prod = c
-                break
-
-    if not col_marca or not col_prod:
-        # não achou as colunas necessárias
-        return []
-
-    out = []
-    for _, row in df.iterrows():
-        marca = (row.get(col_marca, "") or "").strip().upper()
-        prod  = (row.get(col_prod, "") or "").strip()
-
-        if not marca or not prod:
+    out: List[Dict[str, Any]] = []
+    for _, r in df.iterrows():
+        hid = _to_int(r.get(col_id)) if col_id else 0
+        nome = _safe_str(r.get(col_nome)) if col_nome else ""
+        if not hid or not nome:
             continue
 
-        out.append({"marca_planilha": marca, "produto": prod})
+        out.append({
+            "id_hospital": hid,
+            "nome_hospital": nome,
+            "endereco": _safe_str(r.get(col_end)) if col_end else "",
+            "numero": _safe_str(r.get(col_num)) if col_num else "",
+            "complemento": _safe_str(r.get(col_comp)) if col_comp else "",
+            "cep": _safe_str(r.get(col_cep)) if col_cep else "",
+            "cidade": _safe_str(r.get(col_cid)) if col_cid else "",
+            "estado": _safe_str(r.get(col_uf)) if col_uf else "",
+        })
 
     return out
 
 
-import os
-import pandas as pd
-
-def load_marcas_from_produtos_excel(data_dir: str = "data") -> list[str]:
+# ======================================================
+# CONTATOS (data/contatos.xlsx)
+# ======================================================
+def load_contatos_from_excel(data_dir: str = "data") -> List[Dict[str, Any]]:
     """
-    Retorna as 'marcas' como os nomes das abas do data/produtos.xlsx
+    Espera colunas típicas:
+      id_hospital, hospital_nome, nome_contato, cargo, telefone
+    """
+    path = os.path.join(data_dir, "contatos.xlsx")
+    if not os.path.exists(path):
+        return []
+
+    df = pd.read_excel(path, dtype=str).fillna("")
+    df = _normalize_columns(df)
+
+    col_id = _find_col(df, ["ID_HOSPITAL", "HOSPITAL_ID"], ["ID_HOSP"])
+    col_hnome = _find_col(df, ["HOSPITAL_NOME", "NOME_HOSPITAL"], ["HOSPITAL"])
+    col_nome = _find_col(df, ["NOME_CONTATO", "CONTATO"], ["CONTATO", "NOME"])
+    col_cargo = _find_col(df, ["CARGO"], ["CARGO"])
+    col_tel = _find_col(df, ["TELEFONE", "TEL"], ["TEL"])
+
+    out: List[Dict[str, Any]] = []
+    for _, r in df.iterrows():
+        nome = _safe_str(r.get(col_nome)) if col_nome else ""
+        if not nome:
+            continue
+
+        out.append({
+            "id_hospital": _to_int(r.get(col_id)) if col_id else None,
+            "hospital_nome": _safe_str(r.get(col_hnome)) if col_hnome else "",
+            "nome_contato": nome,
+            "cargo": _safe_str(r.get(col_cargo)) if col_cargo else "",
+            "telefone": _safe_str(r.get(col_tel)) if col_tel else "",
+        })
+
+    return out
+
+
+# ======================================================
+# DADOS DO HOSPITAL (data/dadoshospitais.xlsx)
+# ======================================================
+def load_dados_hospitais_from_excel(data_dir: str = "data") -> List[Dict[str, Any]]:
+    """
+    Lê o Excel e devolve uma lista de dicts por linha.
+    Mantém as chaves exatamente como no cabeçalho, mas também inclui id_hospital como int.
+    """
+    path = os.path.join(data_dir, "dadoshospitais.xlsx")
+    if not os.path.exists(path):
+        return []
+
+    df = pd.read_excel(path, dtype=str).fillna("")
+    df = _normalize_columns(df)
+
+    # garante id_hospital
+    col_id = _find_col(df, ["ID_HOSPITAL"], ["ID_HOSP"])
+    out: List[Dict[str, Any]] = []
+
+    for _, row in df.iterrows():
+        d = {str(k): _safe_str(v) for k, v in row.to_dict().items()}
+        hid = _to_int(row.get(col_id)) if col_id else 0
+        if not hid:
+            continue
+        d["id_hospital"] = hid
+        out.append(d)
+
+    return out
+
+
+# ======================================================
+# PRODUTOS POR HOSPITAL (data/produtoshospitais.xlsx)
+# ======================================================
+def load_produtos_hospitais_from_excel(data_dir: str = "data") -> List[Dict[str, Any]]:
+    """
+    Espera colunas típicas:
+      hospital_id (ou id_hospital), nome_hospital, marca_planilha, produto, quantidade
+    """
+    path = os.path.join(data_dir, "produtoshospitais.xlsx")
+    if not os.path.exists(path):
+        return []
+
+    df = pd.read_excel(path, dtype=str).fillna("")
+    df = _normalize_columns(df)
+
+    col_hid = _find_col(df, ["HOSPITAL_ID", "ID_HOSPITAL"], ["HOSPITAL", "ID_HOSP"])
+    col_hnome = _find_col(df, ["NOME_HOSPITAL", "HOSPITAL_NOME"], ["HOSPITAL"])
+    col_marca = _find_col(df, ["MARCA_PLANILHA", "MARCA"], ["MARCA"])
+    col_prod = _find_col(df, ["PRODUTO"], ["PROD"])
+    col_qtd = _find_col(df, ["QUANTIDADE", "QTD"], ["QTD", "QUANT"])
+
+    out: List[Dict[str, Any]] = []
+    for _, r in df.iterrows():
+        hid = _to_int(r.get(col_hid)) if col_hid else 0
+        produto = _safe_str(r.get(col_prod)) if col_prod else ""
+        if not hid or not produto:
+            continue
+
+        out.append({
+            "hospital_id": hid,
+            "nome_hospital": _safe_str(r.get(col_hnome)) if col_hnome else "",
+            "marca_planilha": _safe_str(r.get(col_marca)) if col_marca else "",
+            "produto": produto,
+            "quantidade": _to_int(r.get(col_qtd), 0) if col_qtd else 0,
+        })
+
+    return out
+
+
+# ======================================================
+# CATÁLOGO DE PRODUTOS (data/produtos.xlsx) -> ABAS = MARCAS
+# ======================================================
+def load_marcas_from_produtos_excel(data_dir: str = "data") -> List[str]:
+    """
+    Retorna as marcas como os nomes das abas do data/produtos.xlsx
     """
     path = os.path.join(data_dir, "produtos.xlsx")
     if not os.path.exists(path):
         return []
 
     xls = pd.ExcelFile(path)
-    # remove abas vazias/estranhas se quiser; aqui devolve todas
-    marcas = [s.strip() for s in xls.sheet_names if str(s).strip()]
+    marcas = [str(s).strip() for s in xls.sheet_names if str(s).strip()]
     return sorted(marcas)
 
 
-def load_produtos_by_marca_from_produtos_excel(marca: str, data_dir: str = "data") -> list[str]:
+def load_produtos_by_marca_from_produtos_excel(marca: str, data_dir: str = "data") -> List[str]:
     """
-    Recebe a 'marca' (nome da aba) e retorna os produtos da coluna PRODUTO dessa aba.
+    Recebe a marca (nome da aba) e retorna os produtos dessa aba (coluna 'PRODUTO').
     """
     path = os.path.join(data_dir, "produtos.xlsx")
     if not os.path.exists(path):
         return []
 
-    marca = (marca or "").strip()
+    marca = _safe_str(marca)
     if not marca:
         return []
 
-    # lê somente a aba selecionada
     df = pd.read_excel(path, sheet_name=marca, dtype=str).fillna("")
+    df = _normalize_columns(df)
 
-    # coluna PRODUTO pode vir como "PRODUTO", "Produto", etc
+    # procura a coluna PRODUTO (case-insensitive)
     col_prod = None
     for c in df.columns:
         if str(c).strip().upper() == "PRODUTO":
             col_prod = c
             break
+
+    # fallback: tenta por "contém"
     if not col_prod:
-        # fallback: primeira coluna
-        col_prod = df.columns[0] if len(df.columns) else None
+        col_prod = _find_col(df, ["PRODUTO"], ["PROD"])
+
+    # fallback final: primeira coluna
+    if not col_prod and len(df.columns) > 0:
+        col_prod = df.columns[0]
 
     if not col_prod:
         return []
 
     produtos = []
     for v in df[col_prod].tolist():
-        p = (v or "").strip()
+        p = _safe_str(v)
         if p:
             produtos.append(p)
 
-    # remove duplicados mantendo ordem e ordena (se quiser manter ordem original, remova sorted)
+    # remove duplicados e ordena
     produtos = sorted(list(dict.fromkeys(produtos)))
     return produtos
 
+
+# ======================================================
+# (Opcional) Compat: se você tinha uma função antiga com esse nome,
+# deixo aqui para não quebrar imports antigos.
+# Ela retorna lista de dicts {"marca_planilha": <aba>, "produto": <produto>}
+# ======================================================
+def load_catalogo_produtos_from_excel(data_dir: str = "data") -> List[Dict[str, str]]:
+    """
+    Compat: monta um catálogo (marca_planilha, produto) lendo todas as abas.
+    """
+    marcas = load_marcas_from_produtos_excel(data_dir)
+    out: List[Dict[str, str]] = []
+    for m in marcas:
+        prods = load_produtos_by_marca_from_produtos_excel(m, data_dir)
+        for p in prods:
+            out.append({"marca_planilha": m.strip(), "produto": p})
+    return out
