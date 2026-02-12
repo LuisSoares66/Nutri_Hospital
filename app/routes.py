@@ -761,10 +761,10 @@ def reset_db():
     reset_password = request.form.get("reset_password")
     confirm_text = request.form.get("confirm_text")
 
-    # valida senha
-    admin_pass = getattr(Config, "ADMIN_PASS", None)
+    admin_pass = os.environ.get("ADMIN_PASS", "")  # pega direto do Render
+
     if not admin_pass:
-        flash("ADMIN_PASS não configurada no config.py / Render.", "error")
+        flash("ADMIN_PASS não encontrada nas variáveis de ambiente do Render.", "error")
         return redirect(url_for("main.admin_panel"))
 
     if reset_password != admin_pass:
@@ -776,13 +776,11 @@ def reset_db():
         return redirect(url_for("main.admin_panel"))
 
     try:
-        # apaga na ordem FK-safe
         AppMeta.query.delete()
         Contato.query.delete()
         ProdutoHospital.query.delete()
         DadosHospital.query.delete()
         Hospital.query.delete()
-
         db.session.commit()
 
         flash("Banco de dados zerado com sucesso.", "success")
@@ -792,4 +790,5 @@ def reset_db():
         db.session.rollback()
         flash(f"Erro ao zerar banco: {e}", "error")
         return redirect(url_for("main.admin_panel"))
+
 
