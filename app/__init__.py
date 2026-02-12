@@ -16,7 +16,7 @@ def create_app():
     from app.auth import auth_bp
 
     app.register_blueprint(main_bp)       # sem prefixo
-    app.register_blueprint(auth_bp)       # ou url_prefix="/auth"
+    #app.register_blueprint(auth_bp)       # ou url_prefix="/auth"
 
     return app
 

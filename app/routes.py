@@ -5,7 +5,7 @@ from app.extensions import db
 
 import os
 from datetime import datetime
-from flask import jsonify
+from flask import jsonify, request
 # cache simples pra não ler o Excel toda hora
 _DADOS_EXCEL_CACHE = {"mtime": None, "rows": None}
 
@@ -837,7 +837,6 @@ def fix_schema_dados():
 
     return redirect(url_for("main.admin_panel"))
 
-from flask import jsonify
 
 
 @bp.route("/api/catalogo_produtos", methods=["GET"], endpoint="catalogo_produtos")
@@ -846,8 +845,12 @@ def api_catalogo_produtos():
     if not marca:
         return jsonify({"marca": "", "produtos": []})
 
-    produtos = load_produtos_by_marca_from_produtos_excel(marca, "data")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(base_dir, "data")
+
+    produtos = load_produtos_by_marca_from_produtos_excel(marca, data_dir)
     return jsonify({"marca": marca, "produtos": produtos})
+
 
 
 
