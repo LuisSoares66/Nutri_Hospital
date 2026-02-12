@@ -2,6 +2,119 @@ import io
 import csv
 import traceback
 
+import os
+from datetime import datetime
+
+# cache simples pra não ler o Excel toda hora
+_DADOS_EXCEL_CACHE = {"mtime": None, "rows": None}
+
+def _load_dados_excel_cached(data_dir="data"):
+    """
+    Carrega dadoshospitais.xlsx com cache por mtime.
+    """
+    path = os.path.join(data_dir, "dadoshospitais.xlsx")
+    try:
+        mtime = os.path.getmtime(path)
+    except Exception:
+        return []
+
+    if _DADOS_EXCEL_CACHE["mtime"] != mtime or _DADOS_EXCEL_CACHE["rows"] is None:
+        rows = load_dados_hospitais_from_excel(data_dir)  # seu loader já existe
+        _DADOS_EXCEL_CACHE["rows"] = rows
+        _DADOS_EXCEL_CACHE["mtime"] = mtime
+
+    return _DADOS_EXCEL_CACHE["rows"] or []
+
+
+def _pick(row: dict, candidates: list[str]) -> str:
+    """
+    Procura a primeira chave existente no dict (case-insensitive também).
+    """
+    if not row:
+        return ""
+
+    # mapa case-insensitive
+    upper_map = {str(k).strip().upper(): k for k in row.keys()}
+    for c in candidates:
+        if c in row:
+            return row.get(c) or ""
+        cu = str(c).strip().upper()
+        if cu in upper_map:
+            return row.get(upper_map[cu]) or ""
+    return ""
+
+
+def _populate_dados_from_excel(dados_obj, excel_row: dict):
+    """
+    Mapeia colunas do Excel -> colunas do model DadosHospital.
+    Ajuste os candidates se suas perguntas no Excel forem diferentes.
+    """
+    if not excel_row:
+        return dados_obj
+
+    # Preenche somente se estiver vazio no banco (pra não sobrescrever edição do usuário)
+    def set_if_empty(field_name: str, value: str):
+        current = getattr(dados_obj, field_name, None)
+        if (current is None) or (str(current).strip() == ""):
+            setattr(dados_obj, field_name, (value or "").strip())
+
+    set_if_empty("especialidade", _pick(excel_row, [
+        "especialidade",
+        "Qual a especialidade do hospital?"
+    ]))
+
+    set_if_empty("leitos", _pick(excel_row, [
+        "leitos",
+        "Quantos leitos?"
+    ]))
+
+    set_if_empty("leitos_uti", _pick(excel_row, [
+        "leitos_uti",
+        "Quantos leitos de UTI?"
+    ]))
+
+    set_if_empty("fatores_decisorios", _pick(excel_row, [
+        "fatores_decisorios",
+        "Quais fatores são decisórios para o hospital escolher um determinado produto?"
+    ]))
+
+    set_if_empty("prioridades_atendimento", _pick(excel_row, [
+        "prioridades_atendimento",
+        "Quais as prioridas do hospital para um atendimento nutricional de excelencia?"
+    ]))
+
+    set_if_empty("certificacao", _pick(excel_row, [
+        "certificacao",
+        "O hospital tem certificação ONA, CANADIAN, Joint Comission,...)?"
+    ]))
+
+    set_if_empty("emtn", _pick(excel_row, [
+        "emtn",
+        "O hospital tem EMTN?"
+    ]))
+
+    set_if_empty("emtn_membros", _pick(excel_row, [
+        "emtn_membros",
+        "Se sim, quais os membro (nomes e especialidade)?"
+    ]))
+
+    # Se você tiver essas colunas no model, pode manter:
+    if hasattr(dados_obj, "comissao_feridas"):
+        set_if_empty("comissao_feridas", _pick(excel_row, ["Tem comissão de feridas?"]))
+    if hasattr(dados_obj, "comissao_feridas_membros"):
+        set_if_empty("comissao_feridas_membros", _pick(excel_row, ["Se sim, quem faz parte?"]))
+
+    return dados_obj
+
+
+def _find_dados_row_for_hospital(hospital_id: int, data_dir="data") -> dict | None:
+    rows = _load_dados_excel_cached(data_dir)
+    for r in rows:
+        if (r.get("id_hospital") or 0) == hospital_id:
+            return r
+    return None
+
+
 from flask import (
     Blueprint, render_template, request,
     redirect, url_for, flash, Response
@@ -195,35 +308,48 @@ def contatos(hospital_id):
 def dados_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
-    # garante que existe 1 registro de dados por hospital
     dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
+    created_now = False
+
     if not dados:
         dados = DadosHospital(hospital_id=hospital_id)
         db.session.add(dados)
         db.session.commit()
+        created_now = True
 
-    if request.method == "POST":
+    # ✅ NO GET: tenta completar com dados do Excel (se ainda estiver vazio no banco)
+    if request.method == "GET":
         try:
-            # IMPORTANTE: os "name=" do HTML precisam bater com isso aqui
-            dados.especialidade = (request.form.get("especialidade") or "").strip()
-            dados.leitos = (request.form.get("leitos") or "").strip()
-            dados.leitos_uti = (request.form.get("leitos_uti") or "").strip()
-            dados.fatores_decisorios = (request.form.get("fatores_decisorios") or "").strip()
-            dados.prioridades_atendimento = (request.form.get("prioridades_atendimento") or "").strip()
-            dados.certificacao = (request.form.get("certificacao") or "").strip()
-            dados.emtn = (request.form.get("emtn") or "").strip()
-            dados.emtn_membros = (request.form.get("emtn_membros") or "").strip()
-
-            db.session.commit()
-            flash("Dados atualizados.", "success")
-
+            excel_row = _find_dados_row_for_hospital(hospital_id, data_dir="data")
+            if excel_row:
+                _populate_dados_from_excel(dados, excel_row)
+                db.session.commit()
         except Exception as e:
             db.session.rollback()
-            flash(f"Erro ao salvar dados: {e}", "error")
+            # não trava a página — só avisa
+            flash(f"Não consegui carregar dados do Excel para este hospital: {e}", "warning")
 
-        return redirect(url_for("main.dados_hospital", hospital_id=hospital_id))
+        return render_template("dados_hospitais.html", hospital=hospital, dados=dados)
 
-    return render_template("dados_hospitais.html", hospital=hospital, dados=dados)
+    # ✅ NO POST: salva o que o usuário editou
+    try:
+        dados.especialidade = (request.form.get("especialidade") or "").strip()
+        dados.leitos = (request.form.get("leitos") or "").strip()
+        dados.leitos_uti = (request.form.get("leitos_uti") or "").strip()
+        dados.fatores_decisorios = (request.form.get("fatores_decisorios") or "").strip()
+        dados.prioridades_atendimento = (request.form.get("prioridades_atendimento") or "").strip()
+        dados.certificacao = (request.form.get("certificacao") or "").strip()
+        dados.emtn = (request.form.get("emtn") or "").strip()
+        dados.emtn_membros = (request.form.get("emtn_membros") or "").strip()
+
+        db.session.commit()
+        flash("Dados atualizados.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao salvar dados: {e}", "error")
+
+    return redirect(url_for("main.dados_hospital", hospital_id=hospital_id))
+
 
 
 
