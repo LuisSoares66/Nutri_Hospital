@@ -877,6 +877,11 @@ def api_catalogo_produtos():
     produtos = load_produtos_by_marca_from_produtos_excel(marca, data_dir)
     return jsonify({"marca": marca, "produtos": produtos})
 
+@bp.route("/hospitais/<int:hospital_id>/produtos/editar", methods=["GET"])
+def editar_produtos_hospital(hospital_id):
+    return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+
+
 
 
 
