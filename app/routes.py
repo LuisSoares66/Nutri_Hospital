@@ -792,3 +792,41 @@ def reset_db():
         return redirect(url_for("main.admin_panel"))
 
 
+from sqlalchemy import text
+
+@bp.route("/admin/fix_schema_dados", methods=["POST"])
+@admin_required
+def fix_schema_dados():
+    try:
+        # adiciona colunas caso não existam (Postgres)
+        stmts = [
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS comissao_feridas TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS comissao_feridas_membros TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS nutricao_enteral_dia TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS pacientes_tno_dia TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS altas_orientadas TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS quem_orienta_alta TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS protocolo_evolucao_dieta TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS protocolo_evolucao_dieta_qual TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS protocolo_lesao_pressao TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS maior_desafio TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS dieta_padrao TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS bomba_infusao_modelo TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS fornecedor TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS convenio_empresas TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS convenio_empresas_modelo_pagamento TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS reembolso TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS modelo_compras TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS contrato_tipo TEXT DEFAULT '';",
+            "ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS nova_etapa_negociacao TEXT DEFAULT '';",
+        ]
+        for s in stmts:
+            db.session.execute(text(s))
+
+        db.session.commit()
+        flash("Schema corrigido: colunas de dados_hospitais criadas/garantidas ✅", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao corrigir schema: {e}", "error")
+
+    return redirect(url_for("main.admin_panel"))

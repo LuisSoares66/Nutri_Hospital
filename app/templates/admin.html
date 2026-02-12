@@ -85,6 +85,10 @@
                 Resetar banco
               </button>
             </div>
+          <form method="POST" action="{{ url_for('main.fix_schema_dados') }}" class="mt-2">
+            <button class="btn btn-outline-primary w-100" type="submit">
+              Corrigir schema (DadosHospital)
+            </button>
           </form>
 
           <hr>
