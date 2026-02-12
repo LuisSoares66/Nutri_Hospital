@@ -9,6 +9,17 @@ from flask import jsonify, request
 # cache simples pra não ler o Excel toda hora
 _DADOS_EXCEL_CACHE = {"mtime": None, "rows": None}
 
+from app.excel_loader import (
+    load_hospitais_from_excel,
+    load_contatos_from_excel,
+    load_dados_hospitais_from_excel,
+    load_produtos_hospitais_from_excel,
+    load_marcas_from_produtos_excel,
+    load_produtos_by_marca_from_produtos_excel,
+)
+
+
+
 def _load_dados_excel_cached(data_dir="data"):
     """
     Carrega dadoshospitais.xlsx com cache por mtime.
@@ -407,38 +418,41 @@ def dados_hospital(hospital_id):
 # ======================================================
 # PRODUTOS
 # ======================================================
+from flask import jsonify
+import os
+
 @bp.route("/hospitais/<int:hospital_id>/produtos", methods=["GET", "POST"])
 def produtos_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
-    # =======================
-    # POST (salvar produto)
-    # =======================
+    # caminho absoluto do /data no Render
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../project/src
+    data_dir = os.path.join(base_dir, "data")
+
     if request.method == "POST":
         try:
-            produto_nome = (request.form.get("produto") or "").strip()
-            marca = (request.form.get("marca_planilha") or "").strip()
+            produto_id_raw = (request.form.get("produto_id") or "").strip()
 
-            if not produto_nome:
-                flash("Selecione um produto.", "error")
-                return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+            if produto_id_raw:
+                produto = ProdutoHospital.query.get_or_404(int(produto_id_raw))
+                if produto.hospital_id != hospital_id:
+                    flash("Produto não pertence a este hospital.", "error")
+                    return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+            else:
+                produto = ProdutoHospital(hospital_id=hospital_id)
+                db.session.add(produto)
+
+            produto.nome_hospital = hospital.nome_hospital
+            produto.marca_planilha = (request.form.get("marca_planilha") or "").strip()
+            produto.produto = (request.form.get("produto") or "").strip()
 
             qtd_raw = (request.form.get("quantidade") or "").strip()
             try:
-                quantidade = int(float(qtd_raw)) if qtd_raw else 0
+                produto.quantidade = int(float(qtd_raw)) if qtd_raw else 0
             except:
-                quantidade = 0
+                produto.quantidade = 0
 
-            p = ProdutoHospital(
-                hospital_id=hospital_id,
-                nome_hospital=hospital.nome_hospital,
-                marca_planilha=marca,
-                produto=produto_nome,
-                quantidade=quantidade,
-            )
-            db.session.add(p)
             db.session.commit()
-
             flash("Produto salvo.", "success")
 
         except Exception as e:
@@ -446,6 +460,25 @@ def produtos_hospital(hospital_id):
             flash(f"Erro ao salvar produto: {e}", "error")
 
         return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+
+    # GET
+    produtos_db = (
+        ProdutoHospital.query
+        .filter_by(hospital_id=hospital_id)
+        .order_by(ProdutoHospital.id.desc())
+        .all()
+    )
+
+    # ✅ marcas = abas do data/produtos.xlsx
+    marcas = load_marcas_from_produtos_excel(data_dir)
+
+    return render_template(
+        "produtos_hospitais.html",
+        hospital=hospital,
+        produtos=produtos_db,
+        marcas_catalogo=marcas
+    )
+
 
     # =======================
     # GET (tela)
