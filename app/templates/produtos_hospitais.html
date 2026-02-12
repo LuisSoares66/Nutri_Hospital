@@ -1,149 +1,136 @@
-<!doctype html>
-<html lang="pt-br">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Produtos do Hospital</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+{% extends "base.html" %}
+{% block content %}
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="{{ url_for('main.hospitais') }}">Hospital Management</a>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.hospital_info', hospital_id=hospital.id) }}">Info</a>
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.contatos', hospital_id=hospital.id) }}">Contatos</a>
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.dados_hospital', hospital_id=hospital.id) }}">Dados</a>
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">Relatório</a>
-    </div>
-  </div>
-</nav>
+<div class="container mt-4">
+  <h2>{{ hospital.nome_hospital }} - Produtos</h2>
 
-<div class="container py-4">
+  {% include "_hospital_tabs.html" %}
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="mb-3">
-        {% for category, msg in messages %}
-          <div class="alert alert-{{ 'danger' if category in ['error','danger'] else category }} mb-2">
-            {{ msg }}
-          </div>
-        {% endfor %}
-      </div>
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+          {{ message }}
+        </div>
+      {% endfor %}
     {% endif %}
   {% endwith %}
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h4 class="mb-0">Produtos do Hospital</h4>
-      <div class="text-muted">{{ hospital.nome_hospital }} (ID {{ hospital.id }})</div>
-    </div>
-    <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Voltar</a>
-  </div>
-
-  <!-- ADICIONAR -->
-  <div class="card shadow-sm mb-3">
+  <div class="card shadow-sm mb-4">
     <div class="card-body">
-      <h6 class="mb-3">Adicionar produto</h6>
 
-      <form method="POST" action="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}" class="row g-2">
+      <form method="POST" action="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">
         <input type="hidden" name="produto_id" value="">
 
-        <div class="col-12 col-md-3">
-          <label class="form-label">Marca (planilha)</label>
-          <input class="form-control" name="marca_planilha" placeholder="Ex: Nestlé">
-        </div>
+        <div class="row g-3">
+          <!-- MARCA (rolagem) -->
+          <div class="col-md-4">
+            <label class="form-label">Marca (Catálogo)</label>
+            <select id="marca_select" class="form-select" size="10">
+              {% for m in marcas_catalogo %}
+                <option value="{{ m }}">{{ m }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Clique em uma marca para carregar os produtos.</small>
 
-        <div class="col-12 col-md-7">
-          <label class="form-label">Produto</label>
-          <input class="form-control" name="produto" placeholder="Descrição do produto" required>
-        </div>
+            <!-- campo REAL enviado no POST -->
+            <input type="hidden" name="marca_planilha" id="marca_planilha" value="">
+          </div>
 
-        <div class="col-12 col-md-2">
-          <label class="form-label">Quantidade</label>
-          <input class="form-control" name="quantidade" type="number" min="0" value="0">
-        </div>
+          <!-- PRODUTO (rolagem) -->
+          <div class="col-md-5">
+            <label class="form-label">Produto (Catálogo)</label>
+            <select id="produto_select" class="form-select" size="10">
+              <option value="" disabled>Selecione uma marca…</option>
+            </select>
+            <small class="text-muted">Clique no produto para preencher o campo abaixo.</small>
+          </div>
 
-        <div class="col-12">
-          <button class="btn btn-success" type="submit">Salvar</button>
+          <!-- CAMPOS DO FORM -->
+          <div class="col-md-3">
+            <label class="form-label">Produto selecionado</label>
+            <input type="text" class="form-control" name="produto" id="produto_input" required>
+
+            <label class="form-label mt-2">Quantidade</label>
+            <input type="number" class="form-control" name="quantidade" value="1" min="0">
+
+            <button class="btn btn-success w-100 mt-3" type="submit">
+              Salvar
+            </button>
+          </div>
         </div>
       </form>
 
     </div>
   </div>
 
-  <!-- LISTA -->
+  <!-- LISTA SALVA NO HOSPITAL -->
   <div class="card shadow-sm">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-dark">
+    <div class="card-body">
+      <h5 class="mb-3">Produtos cadastrados</h5>
+
+      <table class="table table-sm table-hover align-middle">
+        <thead>
           <tr>
-            <th>ID</th>
             <th>Marca</th>
             <th>Produto</th>
-            <th style="width:120px;">Qtd</th>
-            <th class="text-center" style="width:200px;">Ações</th>
+            <th>Qtd</th>
           </tr>
         </thead>
         <tbody>
-          {% if produtos %}
-            {% for p in produtos %}
-              <tr>
-                <td>{{ p.id }}</td>
-
-                <!-- EDIT INLINE -->
-                <form method="POST" action="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">
-                  <input type="hidden" name="produto_id" value="{{ p.id }}">
-
-                  <td>
-                    <input class="form-control form-control-sm" name="marca_planilha"
-                           value="{{ p.marca_planilha or '' }}">
-                  </td>
-
-                  <td>
-                    <input class="form-control form-control-sm" name="produto"
-                           value="{{ p.produto or '' }}" required>
-                  </td>
-
-                  <td>
-                    <input class="form-control form-control-sm" name="quantidade"
-                           type="number" min="0" value="{{ p.quantidade or 0 }}">
-                  </td>
-
-                  <td class="text-center">
-                    <div class="d-flex justify-content-center gap-2">
-                      <button class="btn btn-primary btn-sm" type="submit">
-                        Salvar
-                      </button>
-                </form>
-
-                      <form method="POST"
-                            action="{{ url_for('main.excluir_produto', hospital_id=hospital.id, produto_id=p.id) }}"
-                            onsubmit="return confirm('Remover este produto?');">
-                        <button class="btn btn-outline-danger btn-sm" type="submit">
-                          Excluir
-                        </button>
-                      </form>
-
-                    </div>
-                  </td>
-              </tr>
-            {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="5" class="text-center text-muted py-4">
-                Nenhum produto cadastrado.
-              </td>
-            </tr>
-          {% endif %}
+          {% for p in produtos %}
+          <tr>
+            <td>{{ p.marca_planilha }}</td>
+            <td>{{ p.produto }}</td>
+            <td>{{ p.quantidade }}</td>
+          </tr>
+          {% endfor %}
         </tbody>
       </table>
+
+      {% if not produtos %}
+        <p class="text-muted mb-0">Nenhum produto cadastrado.</p>
+      {% endif %}
     </div>
   </div>
-
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<script>
+  const marcaSelect = document.getElementById("marca_select");
+  const produtoSelect = document.getElementById("produto_select");
+  const produtoInput = document.getElementById("produto_input");
+  const marcaHidden = document.getElementById("marca_planilha");
+
+  async function carregarProdutosDaMarca(marca) {
+    produtoSelect.innerHTML = `<option value="" disabled>Carregando…</option>`;
+    const resp = await fetch(`/api/catalogo_produtos?marca=${encodeURIComponent(marca)}`);
+    const data = await resp.json();
+
+    produtoSelect.innerHTML = "";
+    if (!data.produtos || data.produtos.length === 0) {
+      produtoSelect.innerHTML = `<option value="" disabled>Nenhum produto nessa marca</option>`;
+      return;
+    }
+
+    for (const p of data.produtos) {
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = p;
+      produtoSelect.appendChild(opt);
+    }
+  }
+
+  marcaSelect.addEventListener("change", (e) => {
+    const marca = e.target.value || "";
+    marcaHidden.value = marca; // envia no POST
+    produtoInput.value = "";   // limpa
+    carregarProdutosDaMarca(marca);
+  });
+
+  produtoSelect.addEventListener("change", (e) => {
+    const prod = e.target.value || "";
+    produtoInput.value = prod; // preenche input
+  });
+</script>
+
+{% endblock %}
