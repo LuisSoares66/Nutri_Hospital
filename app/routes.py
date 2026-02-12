@@ -1,6 +1,7 @@
 import io
 import csv
 import traceback
+from app.extensions import db
 
 import os
 from datetime import datetime
@@ -149,7 +150,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import inspect, text
 
 from config import Config
-from app import db
+
 from app.models import Hospital, Contato, DadosHospital, ProdutoHospital, AppMeta
 from app.auth import admin_required
 from app.pdf_report import build_hospital_report_pdf

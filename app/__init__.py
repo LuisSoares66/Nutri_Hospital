@@ -1,23 +1,23 @@
-from app import db
+# app/__init__.py
 from flask import Flask
 from config import Config
-#from app.extensions import db  # se você usa db em extensions
-# ou: from app import db  (ajuste conforme seu projeto)
+from app.extensions import db, migrate
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # init extensões
+    # init extensions
     db.init_app(app)
+    migrate.init_app(app, db)
 
-    # ✅ importa blueprints SÓ aqui dentro, UMA vez
+    # blueprints
     from app.routes import bp as main_bp
     from app.auth import auth_bp
 
-    # ✅ registra uma vez cada
-    app.register_blueprint(main_bp)      # sem prefixo
-    app.register_blueprint(auth_bp)      # sem prefixo
+    app.register_blueprint(main_bp)       # sem prefixo
+    app.register_blueprint(auth_bp)       # ou url_prefix="/auth"
 
     return app
+
 
