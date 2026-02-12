@@ -46,65 +46,90 @@ def _pick(row: dict, candidates: list[str]) -> str:
 
 def _populate_dados_from_excel(dados_obj, excel_row: dict):
     """
-    Mapeia colunas do Excel -> colunas do model DadosHospital.
-    Ajuste os candidates se suas perguntas no Excel forem diferentes.
+    Mapeia o Excel dadoshospitais.xlsx (cabeçalho que você mandou) -> DadosHospital.
+    Só preenche se o campo do banco estiver vazio, pra não sobrescrever edições.
     """
     if not excel_row:
         return dados_obj
 
-    # Preenche somente se estiver vazio no banco (pra não sobrescrever edição do usuário)
     def set_if_empty(field_name: str, value: str):
+        if not hasattr(dados_obj, field_name):
+            return
         current = getattr(dados_obj, field_name, None)
-        if (current is None) or (str(current).strip() == ""):
+        if current is None or str(current).strip() == "":
             setattr(dados_obj, field_name, (value or "").strip())
 
-    set_if_empty("especialidade", _pick(excel_row, [
-        "especialidade",
-        "Qual a especialidade do hospital?"
-    ]))
-
-    set_if_empty("leitos", _pick(excel_row, [
-        "leitos",
-        "Quantos leitos?"
-    ]))
-
-    set_if_empty("leitos_uti", _pick(excel_row, [
-        "leitos_uti",
-        "Quantos leitos de UTI?"
-    ]))
+    # Campos principais que você já usa na tela
+    set_if_empty("especialidade", _pick(excel_row, ["Qual a especialidade do hospital?", "especialidade"]))
+    set_if_empty("leitos", _pick(excel_row, ["Quantos leitos?", "leitos"]))
+    set_if_empty("leitos_uti", _pick(excel_row, ["Quantos leitos de UTI?", "leitos_uti"]))
 
     set_if_empty("fatores_decisorios", _pick(excel_row, [
-        "fatores_decisorios",
-        "Quais fatores são decisórios para o hospital escolher um determinado produto?"
+        "Quais fatores são decisórios para o hospital escolher um determinado produto?",
+        "fatores_decisorios"
     ]))
 
     set_if_empty("prioridades_atendimento", _pick(excel_row, [
-        "prioridades_atendimento",
-        "Quais as prioridas do hospital para um atendimento nutricional de excelencia?"
+        "Quais as prioridas do hospital para um atendimento nutricional de excelencia?",
+        "prioridades_atendimento"
     ]))
 
     set_if_empty("certificacao", _pick(excel_row, [
-        "certificacao",
-        "O hospital tem certificação ONA, CANADIAN, Joint Comission,...)?"
+        "O hospital tem certificação ONA, CANADIAN, Joint Comission,...)?",
+        "certificacao"
     ]))
 
-    set_if_empty("emtn", _pick(excel_row, [
-        "emtn",
-        "O hospital tem EMTN?"
+    set_if_empty("emtn", _pick(excel_row, ["O hospital tem EMTN?", "emtn"]))
+    set_if_empty("emtn_membros", _pick(excel_row, ["Se sim, quais os membro (nomes e especialidade)?", "emtn_membros"]))
+
+    # Campos adicionais (do seu Excel)
+    set_if_empty("comissao_feridas", _pick(excel_row, ["Tem comissão de feridas?"]))
+    set_if_empty("comissao_feridas_membros", _pick(excel_row, ["Se sim, quem faz parte?"]))
+
+    set_if_empty("nutricao_enteral_dia", _pick(excel_row, ["Tem quantas nutrição enteral por dia?"]))
+    set_if_empty("pacientes_tno_dia", _pick(excel_row, ["Tem quantos pacientes em TNO por dia?"]))
+
+    set_if_empty("altas_orientadas", _pick(excel_row, ["Quantas altas orientadas por semana ou por mês?"]))
+    set_if_empty("quem_orienta_alta", _pick(excel_row, ["Quem faz esta orientação de alta?"]))
+
+    set_if_empty("protocolo_evolucao_dieta", _pick(excel_row, ["Existe um protocolo de evolução de dieta?"]))
+
+    # Atenção: existe um "Qual?" genérico na planilha (logo depois do protocolo de evolução)
+    set_if_empty("protocolo_evolucao_dieta_qual", _pick(excel_row, ["Qual?"]))
+
+    set_if_empty("protocolo_lesao_pressao", _pick(excel_row, [
+        "Existe um protocolo para suplementação de pacientes com lesão por pressão ou feridas?"
     ]))
 
-    set_if_empty("emtn_membros", _pick(excel_row, [
-        "emtn_membros",
-        "Se sim, quais os membro (nomes e especialidade)?"
+    set_if_empty("maior_desafio", _pick(excel_row, [
+        "Qual o maior desafio na terapia nutricional do paciente internando no hospital?"
     ]))
 
-    # Se você tiver essas colunas no model, pode manter:
-    if hasattr(dados_obj, "comissao_feridas"):
-        set_if_empty("comissao_feridas", _pick(excel_row, ["Tem comissão de feridas?"]))
-    if hasattr(dados_obj, "comissao_feridas_membros"):
-        set_if_empty("comissao_feridas_membros", _pick(excel_row, ["Se sim, quem faz parte?"]))
+    set_if_empty("dieta_padrao", _pick(excel_row, ["Qual a dieta padrão utilizada no hospital?"]))
+
+    set_if_empty("bomba_infusao_modelo", _pick(excel_row, [
+        "Em relação à bomba de infusão: () é própria; () atrelada à compra de dieta; () comodato; () outro"
+    ]))
+
+    set_if_empty("fornecedor", _pick(excel_row, ["Qual fornecedor?"]))
+
+    set_if_empty("convenio_empresas", _pick(excel_row, ["Tem convenio com empresas?"]))
+
+    set_if_empty("convenio_empresas_modelo_pagamento", _pick(excel_row, [
+        "Qual(is) e qual Modelo de pagamento (NF, brasindice com de 100%,DG)?"
+    ]))
+
+    set_if_empty("reembolso", _pick(excel_row, ["Tem reembolso?"]))
+
+    set_if_empty("modelo_compras", _pick(excel_row, [
+        "Qual modelo de compras do hospital? ()bionexo; () Contrato; () Apoio; () Cotação direta (na forma de caixa de itens)"
+    ]))
+
+    set_if_empty("contrato_tipo", _pick(excel_row, ["Se contrato, é anual ou semestral?"]))
+    set_if_empty("nova_etapa_negociacao", _pick(excel_row, ["Quando será a nova etapa de negociação?"]))
 
     return dados_obj
+
 
 
 def _find_dados_row_for_hospital(hospital_id: int, data_dir="data") -> dict | None:
@@ -311,6 +336,8 @@ def dados_hospital(hospital_id):
     dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
     created_now = False
 
+
+
     if not dados:
         dados = DadosHospital(hospital_id=hospital_id)
         db.session.add(dados)
@@ -341,6 +368,25 @@ def dados_hospital(hospital_id):
         dados.certificacao = (request.form.get("certificacao") or "").strip()
         dados.emtn = (request.form.get("emtn") or "").strip()
         dados.emtn_membros = (request.form.get("emtn_membros") or "").strip()
+        dados.comissao_feridas = (request.form.get("comissao_feridas") or "").strip()
+        dados.comissao_feridas_membros = (request.form.get("comissao_feridas_membros") or "").strip()
+        dados.nutricao_enteral_dia = (request.form.get("nutricao_enteral_dia") or "").strip()
+        dados.pacientes_tno_dia = (request.form.get("pacientes_tno_dia") or "").strip()
+        dados.altas_orientadas = (request.form.get("altas_orientadas") or "").strip()
+        dados.quem_orienta_alta = (request.form.get("quem_orienta_alta") or "").strip()
+        dados.protocolo_evolucao_dieta = (request.form.get("protocolo_evolucao_dieta") or "").strip()
+        dados.protocolo_evolucao_dieta_qual = (request.form.get("protocolo_evolucao_dieta_qual") or "").strip()
+        dados.protocolo_lesao_pressao = (request.form.get("protocolo_lesao_pressao") or "").strip()
+        dados.maior_desafio = (request.form.get("maior_desafio") or "").strip()
+        dados.dieta_padrao = (request.form.get("dieta_padrao") or "").strip()
+        dados.bomba_infusao_modelo = (request.form.get("bomba_infusao_modelo") or "").strip()
+        dados.fornecedor = (request.form.get("fornecedor") or "").strip()
+        dados.convenio_empresas = (request.form.get("convenio_empresas") or "").strip()
+        dados.convenio_empresas_modelo_pagamento = (request.form.get("convenio_empresas_modelo_pagamento") or "").strip()
+        dados.reembolso = (request.form.get("reembolso") or "").strip()
+        dados.modelo_compras = (request.form.get("modelo_compras") or "").strip()
+        dados.contrato_tipo = (request.form.get("contrato_tipo") or "").strip()
+        dados.nova_etapa_negociacao = (request.form.get("nova_etapa_negociacao") or "").strip()
 
         db.session.commit()
         flash("Dados atualizados.", "success")

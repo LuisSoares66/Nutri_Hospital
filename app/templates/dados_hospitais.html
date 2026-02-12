@@ -8,15 +8,9 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-dark bg-dark">
   <div class="container">
     <a class="navbar-brand" href="{{ url_for('main.hospitais') }}">Hospital Management</a>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.hospital_info', hospital_id=hospital.id) }}">Info</a>
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.contatos', hospital_id=hospital.id) }}">Contatos</a>
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">Produtos</a>
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">Relatório</a>
-    </div>
   </div>
 </nav>
 
@@ -34,13 +28,8 @@
     {% endif %}
   {% endwith %}
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h4 class="mb-0">Dados do Hospital</h4>
-      <div class="text-muted">{{ hospital.nome_hospital }} (ID {{ hospital.id }})</div>
-    </div>
-    <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Voltar</a>
-  </div>
+  {% set active_tab = "dados" %}
+  {% include "_hospital_tabs.html" %}
 
   <div class="card shadow-sm">
     <div class="card-body">
@@ -87,9 +76,106 @@
           <textarea class="form-control" name="emtn_membros" rows="3">{{ dados.emtn_membros or '' }}</textarea>
         </div>
 
-        <div class="col-12 d-flex gap-2">
+        <hr class="my-2">
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Tem comissão de feridas?</label>
+          <input class="form-control" name="comissao_feridas" value="{{ dados.comissao_feridas or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Quem faz parte? (comissão feridas)</label>
+          <input class="form-control" name="comissao_feridas_membros" value="{{ dados.comissao_feridas_membros or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nutrição enteral por dia</label>
+          <input class="form-control" name="nutricao_enteral_dia" value="{{ dados.nutricao_enteral_dia or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Pacientes em TNO por dia</label>
+          <input class="form-control" name="pacientes_tno_dia" value="{{ dados.pacientes_tno_dia or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Altas orientadas (semana/mês)</label>
+          <input class="form-control" name="altas_orientadas" value="{{ dados.altas_orientadas or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Quem orienta a alta?</label>
+          <input class="form-control" name="quem_orienta_alta" value="{{ dados.quem_orienta_alta or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Existe protocolo de evolução de dieta?</label>
+          <input class="form-control" name="protocolo_evolucao_dieta" value="{{ dados.protocolo_evolucao_dieta or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Qual? (protocolo evolução)</label>
+          <input class="form-control" name="protocolo_evolucao_dieta_qual" value="{{ dados.protocolo_evolucao_dieta_qual or '' }}">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Protocolo para suplementação (lesão por pressão/feridas)?</label>
+          <textarea class="form-control" name="protocolo_lesao_pressao" rows="2">{{ dados.protocolo_lesao_pressao or '' }}</textarea>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Maior desafio na terapia nutricional</label>
+          <textarea class="form-control" name="maior_desafio" rows="2">{{ dados.maior_desafio or '' }}</textarea>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Dieta padrão utilizada</label>
+          <textarea class="form-control" name="dieta_padrao" rows="2">{{ dados.dieta_padrao or '' }}</textarea>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Bomba de infusão (modelo)</label>
+          <textarea class="form-control" name="bomba_infusao_modelo" rows="2">{{ dados.bomba_infusao_modelo or '' }}</textarea>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Fornecedor</label>
+          <input class="form-control" name="fornecedor" value="{{ dados.fornecedor or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Convênio com empresas?</label>
+          <input class="form-control" name="convenio_empresas" value="{{ dados.convenio_empresas or '' }}">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Qual(is) e modelo de pagamento (NF / Brasíndice / DG etc.)</label>
+          <textarea class="form-control" name="convenio_empresas_modelo_pagamento" rows="2">{{ dados.convenio_empresas_modelo_pagamento or '' }}</textarea>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Reembolso?</label>
+          <input class="form-control" name="reembolso" value="{{ dados.reembolso or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Modelo de compras</label>
+          <input class="form-control" name="modelo_compras" value="{{ dados.modelo_compras or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Se contrato: anual ou semestral?</label>
+          <input class="form-control" name="contrato_tipo" value="{{ dados.contrato_tipo or '' }}">
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nova etapa de negociação</label>
+          <input class="form-control" name="nova_etapa_negociacao" value="{{ dados.nova_etapa_negociacao or '' }}">
+        </div>
+
+        <div class="col-12 d-flex gap-2 mt-2">
           <button class="btn btn-primary" type="submit">Salvar</button>
-          <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Cancelar</a>
+          <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Voltar</a>
         </div>
 
       </form>
