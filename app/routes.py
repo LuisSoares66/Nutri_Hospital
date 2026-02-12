@@ -17,6 +17,19 @@ from app.excel_loader import (
     load_marcas_from_produtos_excel,
     load_produtos_by_marca_from_produtos_excel,
 )
+from flask import (
+    Blueprint, render_template, request,
+    redirect, url_for, flash, Response
+)
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import inspect, text
+
+from config import Config
+
+from app.models import Hospital, Contato, DadosHospital, ProdutoHospital, AppMeta
+from app.auth import admin_required
+from app.pdf_report import build_hospital_report_pdf
 
 
 
@@ -152,30 +165,7 @@ def _find_dados_row_for_hospital(hospital_id: int, data_dir="data") -> dict | No
     return None
 
 
-from flask import (
-    Blueprint, render_template, request,
-    redirect, url_for, flash, Response
-)
 
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import inspect, text
-
-from config import Config
-
-from app.models import Hospital, Contato, DadosHospital, ProdutoHospital, AppMeta
-from app.auth import admin_required
-from app.pdf_report import build_hospital_report_pdf
-
-from app.excel_loader import (
-    load_hospitais_from_excel,
-    load_contatos_from_excel,
-    load_dados_hospitais_from_excel,
-    load_produtos_hospitais_from_excel,
-
-    # ✅ catálogo por abas do data/produtos.xlsx
-    load_marcas_from_produtos_excel,
-    load_produtos_by_marca_from_produtos_excel,
-)
 
 
 bp = Blueprint("main", __name__)
@@ -470,6 +460,9 @@ def produtos_hospital(hospital_id):
     )
 
     # ✅ marcas = abas do data/produtos.xlsx
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(base_dir, "data")
+
     marcas = load_marcas_from_produtos_excel(data_dir)
 
     return render_template(
