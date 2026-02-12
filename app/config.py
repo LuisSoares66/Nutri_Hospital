@@ -15,4 +15,4 @@ class Config:
 
     # Login do botão ADMIN
     ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
-    ADMIN_PASS = os.environ.get("ADMIN_PASS")
+    ADMIN_PASS = os.environ.get("ADMIN_PASS", "Cida1383@Anna11")

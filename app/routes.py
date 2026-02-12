@@ -761,7 +761,13 @@ def reset_db():
     reset_password = request.form.get("reset_password")
     confirm_text = request.form.get("confirm_text")
 
-    if reset_password != Config.ADMIN_PASS:
+    # valida senha
+    admin_pass = getattr(Config, "ADMIN_PASS", None)
+    if not admin_pass:
+        flash("ADMIN_PASS não configurada no config.py / Render.", "error")
+        return redirect(url_for("main.admin_panel"))
+
+    if reset_password != admin_pass:
         flash("Senha inválida.", "error")
         return redirect(url_for("main.admin_panel"))
 
@@ -770,6 +776,7 @@ def reset_db():
         return redirect(url_for("main.admin_panel"))
 
     try:
+        # apaga na ordem FK-safe
         AppMeta.query.delete()
         Contato.query.delete()
         ProdutoHospital.query.delete()
@@ -785,3 +792,4 @@ def reset_db():
         db.session.rollback()
         flash(f"Erro ao zerar banco: {e}", "error")
         return redirect(url_for("main.admin_panel"))
+
