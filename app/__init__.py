@@ -20,7 +20,4 @@ def create_app():
     from app.routes import bp
     app.register_blueprint(bp)
 
-    from app.auth import auth_bp
-    app.register_blueprint(auth_bp)  # ou url_prefix=""
-
     return app
