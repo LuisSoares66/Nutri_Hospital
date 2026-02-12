@@ -839,18 +839,15 @@ def fix_schema_dados():
 from flask import jsonify
 
 
-@bp.route("/api/catalogo_produtos", methods=["GET"])
+@bp.route("/api/catalogo_produtos", methods=["GET"], endpoint="api_catalogo_produtos_v2")
 def api_catalogo_produtos():
-    # marca = nome da aba do Excel
     marca = (request.args.get("marca") or "").strip()
-
     if not marca:
         return jsonify({"marca": "", "produtos": []})
 
-    # ✅ produtos = coluna PRODUTO da aba selecionada
     produtos = load_produtos_by_marca_from_produtos_excel(marca, "data")
-
     return jsonify({"marca": marca, "produtos": produtos})
+
 
 
 
