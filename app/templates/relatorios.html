@@ -1,251 +1,119 @@
-{% extends "base.html" %}
-{% block content %}
-  <h2>Relatórios - Hospitais</h2>
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatório</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
 
-  <div class="card">
-    <div><b>Total de hospitais:</b> {{total}}</div>
-    <div><b>Média de leitos:</b> {{ "%.2f"|format(media_leitos or 0) }}</div>
-    <div><b>Média de leitos UTI:</b> {{ "%.2f"|format(media_uti or 0) }}</div>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('main.hospitais') }}">Hospital Management</a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.hospital_info', hospital_id=hospital.id) }}">Info</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.contatos', hospital_id=hospital.id) }}">Contatos</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.dados_hospital', hospital_id=hospital.id) }}">Dados</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">Produtos</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="mb-0">Relatório do Hospital</h4>
+      <div class="text-muted">{{ hospital.nome_hospital }} (ID {{ hospital.id }})</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Voltar</a>
   </div>
 
-  <div class="card">
-    <h3>Top especialidades (até 5)</h3>
-    {% if top_especialidades|length == 0 %}
-      <div class="muted">Sem dados ainda.</div>
-    {% endif %}
-    {% for esp, qtd in top_especialidades %}
-      <div>• {{esp}} — {{qtd}}</div>
-    {% endfor %}
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <a class="btn btn-dark" href="{{ url_for('main.relatorio_pdf', hospital_id=hospital.id) }}">
+      Baixar PDF
+    </a>
+
+    <form method="POST" action="{{ url_for('main.relatorio_csv') }}">
+      <input type="hidden" name="hospital_id" value="{{ hospital.id }}">
+      <button class="btn btn-outline-dark" type="submit">Baixar CSV</button>
+    </form>
   </div>
 
-  <div class="card">
-    <h3>Registros (tabela + filtros)</h3>
+  <div class="row g-3">
 
-    <!-- Barra de busca + filtro por coluna + botões -->
-    <div class="card" style="margin-bottom:12px;">
-      <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 12px;">
-        <div>
-          <label for="buscaRel"><b>Buscar</b></label>
-          <input id="buscaRel" type="text" placeholder="Digite para filtrar... (ex: hospital x, cidade, ONA, bionexo)" />
-        </div>
-
-        <div>
-          <label for="colunaRel"><b>Filtrar por coluna</b></label>
-          <select id="colunaRel">
-            <option value="all">Todas</option>
-
-            <!-- índices = posição do TD (0..n) -->
-            <option value="2">Nome do hospital</option>
-            <option value="3">Cidade</option>
-            <option value="4">UF</option>
-            <option value="5">Telefone</option>
-
-            <option value="6">Especialidade</option>
-            <option value="9">Certificações</option>
-            <option value="10">Fatores decisórios</option>
-            <option value="11">Prioridades</option>
-
-            <option value="12">Convênio</option>
-            <option value="13">Modelo compras</option>
-            <option value="14">Contrato</option>
-            <option value="15">Nova negociação</option>
-          </select>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-2">Contatos ({{ contatos|length }})</h6>
+          {% if contatos %}
+            <ul class="mb-0">
+              {% for c in contatos %}
+                <li>{{ c.nome_contato }} — {{ c.cargo }} — {{ c.telefone }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-muted">Sem contatos cadastrados.</div>
+          {% endif %}
         </div>
       </div>
-
-      <div class="btns" style="margin-top:10px;">
-        <button id="btnLimpar" type="button" class="btn secondary">Limpar busca</button>
-        <button id="btnCSV" type="button" class="btn light">Exportar CSV (filtrado)</button>
-        <a class="btn" href="/relatorios/pdf">Baixar PDF</a>
-        <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
-      </div>
-
-      <div class="muted" id="contadorRel" style="margin-top:8px;"></div>
     </div>
 
-    {% if hospitais|length == 0 %}
-      <p class="muted">Nenhum registro cadastrado.</p>
-    {% else %}
-
-      <div class="table-wrap">
-        <table id="tabelaRel" class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Criado em</th>
-
-              <th>Nome do hospital</th>
-              <th>Cidade</th>
-              <th>UF</th>
-              <th>Telefone</th>
-
-              <th>Especialidade</th>
-              <th>Leitos</th>
-              <th>UTI</th>
-
-              <th>Certificações</th>
-              <th>Fatores decisórios</th>
-              <th>Prioridades</th>
-
-              <th>Convênio</th>
-              <th>Modelo compras</th>
-              <th>Contrato</th>
-              <th>Nova negociação</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for h in hospitais %}
-              <tr class="data-row">
-                <td class="nowrap">{{h.id}}</td>
-                <td class="nowrap">{{h.created_at}}</td>
-
-                <td class="wrap"><b>{{h.nome_hospital}}</b></td>
-                <td class="nowrap">{{h.cidade}}</td>
-                <td class="nowrap">{{h.estado}}</td>
-                <td class="nowrap">{{h.telefone}}</td>
-
-                <td class="wrap">{{h.especialidade}}</td>
-                <td class="nowrap">{{h.leitos}}</td>
-                <td class="nowrap">{{h.leitos_uti}}</td>
-
-                <td class="wrap">{{h.certificacoes}}</td>
-                <td class="wrap">{{h.fatores_decisorios}}</td>
-                <td class="wrap">{{h.prioridades_excelencia}}</td>
-
-                <td class="nowrap">{{h.tem_convenio}}</td>
-                <td class="wrap">{{h.modelo_compras}}</td>
-                <td class="nowrap">{{h.contrato_periodicidade}}</td>
-                <td class="wrap">{{h.nova_negociacao_quando}}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-2">Dados</h6>
+          {% if dados %}
+            <div><b>Especialidade:</b> {{ dados.especialidade or '-' }}</div>
+            <div><b>Leitos:</b> {{ dados.leitos or '-' }}</div>
+            <div><b>Leitos UTI:</b> {{ dados.leitos_uti or '-' }}</div>
+            <hr>
+            <div><b>Fatores decisórios:</b> {{ dados.fatores_decisorios or '-' }}</div>
+            <div class="mt-2"><b>Prioridades:</b> {{ dados.prioridades_atendimento or '-' }}</div>
+          {% else %}
+            <div class="text-muted">Sem dados cadastrados.</div>
+          {% endif %}
+        </div>
       </div>
+    </div>
 
-      <style>
-        .table-wrap{
-          border:1px solid #ddd;
-          border-radius:10px;
-          overflow:auto;
-          max-height: 70vh;
-          background:#fff;
-        }
-        .data-table{
-          border-collapse:collapse;
-          width:100%;
-          min-width: 1800px;
-        }
-        .data-table th, .data-table td{
-          border:1px solid #ddd;
-          padding:8px;
-          vertical-align:top;
-          font-size:16px;
-        }
-        .data-table thead th{
-          position: sticky;
-          top: 0;
-          z-index: 2;
-          background:#f3f3f3;
-        }
-        .nowrap{ white-space:nowrap; }
-        .wrap{ white-space:pre-wrap; word-break:break-word; }
-        .hidden-row{ display:none; }
-      </style>
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-2">Produtos ({{ produtos|length }})</h6>
+          {% if produtos %}
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Marca</th>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for p in produtos %}
+                    <tr>
+                      <td>{{ p.marca_planilha }}</td>
+                      <td>{{ p.produto }}</td>
+                      <td>{{ p.quantidade }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-muted">Sem produtos cadastrados.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-      <script>
-        (function(){
-          const input = document.getElementById("buscaRel");
-          const selectCol = document.getElementById("colunaRel");
-          const rows = Array.from(document.querySelectorAll("#tabelaRel tbody tr"));
-          const contador = document.getElementById("contadorRel");
-          const btnLimpar = document.getElementById("btnLimpar");
-          const btnCSV = document.getElementById("btnCSV");
-
-          function normalize(s){
-            return (s || "").toString().toLowerCase()
-              .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          }
-
-          function getRowTextByColumn(tr, colIndex){
-            const tds = tr.querySelectorAll("td");
-            if(colIndex < 0 || colIndex >= tds.length) return "";
-            return tds[colIndex].innerText || "";
-          }
-
-          function atualizarContador(visiveis){
-            contador.textContent = `${visiveis} de ${rows.length} registro(s) exibido(s).`;
-          }
-
-          function filtrar(){
-            const q = normalize(input.value.trim());
-            const col = selectCol.value;
-
-            let vis = 0;
-            rows.forEach(tr => {
-              let text = (col === "all") ? tr.innerText : getRowTextByColumn(tr, parseInt(col, 10));
-              const ok = (q === "") || normalize(text).includes(q);
-              tr.classList.toggle("hidden-row", !ok);
-              if(ok) vis++;
-            });
-
-            atualizarContador(vis);
-          }
-
-          function limpar(){
-            input.value = "";
-            selectCol.value = "all";
-            filtrar();
-            input.focus();
-          }
-
-          function download(filename, text){
-            const blob = new Blob([text], {type: "text/csv;charset=utf-8;"});
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
-
-          function csvEscape(value){
-            const s = (value ?? "").toString().replace(/\r?\n/g, " ");
-            if(s.includes('"') || s.includes(";")){
-              return `"${s.replace(/"/g, '""')}"`;
-            }
-            return s;
-          }
-
-          function exportarCSV(){
-            const table = document.getElementById("tabelaRel");
-            const headers = Array.from(table.querySelectorAll("thead th")).map(th => th.innerText.trim());
-
-            const visibleRows = rows.filter(tr => !tr.classList.contains("hidden-row"));
-            const linhas = [];
-            linhas.push(headers.map(csvEscape).join(";"));
-
-            visibleRows.forEach(tr => {
-              const cols = Array.from(tr.querySelectorAll("td")).map(td => td.innerText.trim());
-              linhas.push(cols.map(csvEscape).join(";"));
-            });
-
-            download("relatorio_hospitais_filtrado.csv", linhas.join("\n"));
-          }
-
-          input.addEventListener("input", filtrar);
-          selectCol.addEventListener("change", filtrar);
-          btnLimpar.addEventListener("click", limpar);
-          btnCSV.addEventListener("click", exportarCSV);
-
-          atualizarContador(rows.length);
-        })();
-      </script>
-
-    {% endif %}
   </div>
 
-  <div class="btns">
-    <a class="btn secondary" href="/">Voltar</a>
-  </div>
-{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

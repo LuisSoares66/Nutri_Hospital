@@ -1,39 +1,142 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contatos</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
 
-{% block content %}
-<div class="container">
-  <h1>Contatos – {{ hospital.nome_hospital }}</h1>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('main.hospitais') }}">Hospital Management</a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.hospital_info', hospital_id=hospital.id) }}">Info</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.dados_hospital', hospital_id=hospital.id) }}">Dados</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">Produtos</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">Relatório</a>
+    </div>
+  </div>
+</nav>
 
-    <a class="btn secondary"
-   href="{{ url_for('main.hospitais') }}">
-   ⬅ Voltar
-    </a>
+<div class="container py-4">
 
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ 'danger' if category in ['error','danger'] else category }} mb-2">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="mb-0">Contatos</h4>
+      <div class="text-muted">{{ hospital.nome_hospital }} (ID {{ hospital.id }})</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Voltar</a>
   </div>
 
-  <hr>
+  <!-- ADICIONAR -->
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h6 class="mb-3">Adicionar contato</h6>
 
-  {% if contatos|length == 0 %}
-    <p>Nenhum contato cadastrado.</p>
-  {% else %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Cargo</th>
-          <th>Telefone</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in contatos %}
-        <tr>
-          <td>{{ c.nome_contato }}</td>
-          <td>{{ c.cargo or "" }}</td>
-          <td>{{ c.telefone or "" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+      <form method="POST" action="{{ url_for('main.contatos', hospital_id=hospital.id) }}" class="row g-2">
+        <input type="hidden" name="contato_id" value="">
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Nome</label>
+          <input class="form-control" name="nome_contato" required>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Cargo</label>
+          <input class="form-control" name="cargo">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Telefone</label>
+          <input class="form-control" name="telefone" placeholder="(xx) xxxxx-xxxx">
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-success" type="submit">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LISTA -->
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th style="width:80px;">ID</th>
+            <th>Nome</th>
+            <th>Cargo</th>
+            <th>Telefone</th>
+            <th class="text-center" style="width:200px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if contatos %}
+            {% for c in contatos %}
+              <tr>
+                <td>{{ c.id }}</td>
+
+                <form method="POST" action="{{ url_for('main.contatos', hospital_id=hospital.id) }}">
+                  <input type="hidden" name="contato_id" value="{{ c.id }}">
+
+                  <td>
+                    <input class="form-control form-control-sm" name="nome_contato"
+                           value="{{ c.nome_contato or '' }}" required>
+                  </td>
+
+                  <td>
+                    <input class="form-control form-control-sm" name="cargo"
+                           value="{{ c.cargo or '' }}">
+                  </td>
+
+                  <td>
+                    <input class="form-control form-control-sm" name="telefone"
+                           value="{{ c.telefone or '' }}">
+                  </td>
+
+                  <td class="text-center">
+                    <div class="d-flex justify-content-center gap-2">
+                      <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
+                </form>
+
+                      <!-- EXCLUIR CONTATO (precisa de route; se não existir, me avisa que eu crio) -->
+                      <form method="POST" action="{{ url_for('main.excluir_contato', hospital_id=hospital.id, contato_id=c.id) }}"
+                            onsubmit="return confirm('Remover este contato?');">
+                        <button class="btn btn-outline-danger btn-sm" type="submit">Excluir</button>
+                      </form>
+                    </div>
+                  </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">
+                Nenhum contato cadastrado.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
-{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

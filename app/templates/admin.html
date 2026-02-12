@@ -1,34 +1,118 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="container">
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin</title>
 
-  <h1>Admin</h1>
-  <p>Área protegida. Use com cuidado.</p>
+  <!-- Bootstrap (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
 
-  <div style="display:flex; gap:12px; flex-wrap:wrap; margin:20px 0;">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('main.hospitais') }}">Hospital Management</a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.hospitais') }}">Hospitais</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.relatorios_geral') }}">Relatórios</a>
+    </div>
+  </div>
+</nav>
 
-    <!-- Importar Excel (uma vez) -->
-    <form method="POST"
-          action="{{ url_for('main.importar_excel_uma_vez') }}"
-          onsubmit="return confirm('Importar TODOS os dados do Excel? (apenas uma vez)');">
-      <button class="btn secondary" type="submit">⬆ Importar Excel (uma vez)</button>
-    </form>
+<div class="container py-4">
 
-    <!-- Zerar Banco (com senha) -->
-    <form method="POST"
-          action="{{ url_for('main.reset_db') }}"
-          onsubmit="return confirm('TEM CERTEZA? Isso apaga TODOS os dados!');"
-          style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ 'danger' if category in ['error','danger'] else category }} mb-2" role="alert">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
-      <input type="password" name="reset_password" placeholder="Senha reset" required>
-      <input type="text" name="confirm_text" placeholder="Digite APAGAR" required>
+  <div class="row g-3">
+    <!-- IMPORTAÇÃO -->
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Importar Excel (UMA VEZ)</h5>
+          <p class="text-muted mb-3">
+            Importa arquivos em <code>data/</code>:
+            <br>
+            <code>hospitais.xlsx</code>, <code>contatos.xlsx</code>, <code>dadoshospitais.xlsx</code>, <code>produtoshospitais.xlsx</code>.
+          </p>
 
-      <button class="btn danger" type="submit">🧨 Zerar Banco</button>
-    </form>
+          <form method="POST" action="{{ url_for('main.importar_excel_uma_vez') }}">
+            <button class="btn btn-primary w-100" type="submit">
+              Importar agora
+            </button>
+          </form>
 
+          <hr>
+          <small class="text-muted">
+            Dica: se você já importou uma vez, o sistema bloqueia automaticamente.
+            Para liberar novamente, use o reset do banco.
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESET -->
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm border-danger">
+        <div class="card-body">
+          <h5 class="card-title text-danger">Reset total do banco</h5>
+          <p class="text-muted mb-3">
+            Apaga <b>tudo</b> (Hospitais, Contatos, Dados, Produtos e AppMeta).
+            <br>
+            Digite a senha de admin e confirme com <b>APAGAR</b>.
+          </p>
+
+          <form method="POST" action="{{ url_for('main.reset_db') }}" class="row g-2">
+            <div class="col-12">
+              <input class="form-control" type="password" name="reset_password" placeholder="Senha admin" required>
+            </div>
+            <div class="col-12">
+              <input class="form-control" type="text" name="confirm_text" placeholder='Digite APAGAR' required>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-danger w-100" type="submit"
+                      onclick="return confirm('Tem certeza? Isso apaga tudo do banco.');">
+                Resetar banco
+              </button>
+            </div>
+          <form method="POST" action="{{ url_for('main.fix_schema_dados') }}" class="mt-2">
+            <button class="btn btn-outline-primary w-100" type="submit">
+              Corrigir schema (DadosHospital)
+            </button>
+          </form>
+
+          <hr>
+          <small class="text-muted">
+            Se estiver em produção (Render), confirme que é isso mesmo antes de executar.
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAÚDE -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+          <span class="badge text-bg-success">Saúde</span>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.ping') }}">/ping</a>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.hospitais') }}">Voltar</a>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
-
 </div>
-{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

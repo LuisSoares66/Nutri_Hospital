@@ -1,6 +1,6 @@
+from datetime import datetime
 from app import db
 
-from datetime import datetime
 
 class AppMeta(db.Model):
     __tablename__ = "app_meta"
@@ -13,7 +13,7 @@ class AppMeta(db.Model):
 class Hospital(db.Model):
     __tablename__ = "hospitais"
 
-    id = db.Column(db.Integer, primary_key=True)  # id_hospital
+    id = db.Column(db.Integer, primary_key=True)
     nome_hospital = db.Column(db.String(255), nullable=False)
 
     endereco = db.Column(db.String(255))
@@ -47,14 +47,11 @@ class Hospital(db.Model):
         passive_deletes=True
     )
 
-    def __repr__(self):
-        return f"<Hospital {self.id} - {self.nome_hospital}>"
-
 
 class Contato(db.Model):
     __tablename__ = "contatos"
 
-    id = db.Column(db.Integer, primary_key=True)  # id_contato
+    id = db.Column(db.Integer, primary_key=True)
 
     hospital_id = db.Column(
         db.Integer,
@@ -67,64 +64,55 @@ class Contato(db.Model):
     cargo = db.Column(db.String(255))
     telefone = db.Column(db.String(80))
 
-    def __repr__(self):
-        return f"<Contato {self.id} - {self.nome_contato}>"
-
 
 class DadosHospital(db.Model):
     __tablename__ = "dados_hospitais"
 
     id = db.Column(db.Integer, primary_key=True)
 
-    hospital_id = db.Column(
-        db.Integer,
-        db.ForeignKey("hospitais.id", ondelete="CASCADE"),
-        nullable=False,
-        unique=True
-    )
+    # FK
+    hospital_id = db.Column(db.Integer, db.ForeignKey("hospitais.id"), unique=True, nullable=False)
 
-    especialidade = db.Column(db.Text)
-    leitos = db.Column(db.String(50))
-    leitos_uti = db.Column(db.String(50))
+    # Colunas principais (já existiam no seu form inicial)
+    especialidade = db.Column(db.Text, default="")
+    leitos = db.Column(db.Text, default="")
+    leitos_uti = db.Column(db.Text, default="")
+    fatores_decisorios = db.Column(db.Text, default="")
+    prioridades_atendimento = db.Column(db.Text, default="")
+    certificacao = db.Column(db.Text, default="")
+    emtn = db.Column(db.Text, default="")
+    emtn_membros = db.Column(db.Text, default="")
 
-    fatores_decisorios = db.Column(db.Text)
-    prioridades_atendimento = db.Column(db.Text)
+    # Novas colunas (vindas do Excel dadoshospitais.xlsx)
+    comissao_feridas = db.Column(db.Text, default="")
+    comissao_feridas_membros = db.Column(db.Text, default="")
 
-    certificacao = db.Column(db.Text)
+    nutricao_enteral_dia = db.Column(db.Text, default="")
+    pacientes_tno_dia = db.Column(db.Text, default="")
 
-    emtn = db.Column(db.String(50))
-    emtn_membros = db.Column(db.Text)
+    altas_orientadas = db.Column(db.Text, default="")
+    quem_orienta_alta = db.Column(db.Text, default="")
 
-    comissao_feridas = db.Column(db.String(50))
-    comissao_feridas_membros = db.Column(db.Text)
+    protocolo_evolucao_dieta = db.Column(db.Text, default="")
+    protocolo_evolucao_dieta_qual = db.Column(db.Text, default="")
 
-    nutricao_enteral_dia = db.Column(db.String(80))
-    pacientes_tno_dia = db.Column(db.String(80))
+    protocolo_lesao_pressao = db.Column(db.Text, default="")
 
-    altas_orientadas = db.Column(db.String(120))
-    quem_orienta_alta = db.Column(db.Text)
+    maior_desafio = db.Column(db.Text, default="")
+    dieta_padrao = db.Column(db.Text, default="")
 
-    protocolo_evolucao_dieta = db.Column(db.String(50))
-    protocolo_evolucao_dieta_qual = db.Column(db.Text)
+    bomba_infusao_modelo = db.Column(db.Text, default="")
+    fornecedor = db.Column(db.Text, default="")
 
-    protocolo_lesao_pressao = db.Column(db.String(50))
-    protocolo_lesao_pressao_qual = db.Column(db.Text)
+    convenio_empresas = db.Column(db.Text, default="")
+    convenio_empresas_modelo_pagamento = db.Column(db.Text, default="")
 
-    maior_desafio = db.Column(db.Text)
-    dieta_padrao = db.Column(db.Text)
+    reembolso = db.Column(db.Text, default="")
 
-    bomba_infusao_modelo = db.Column(db.Text)
-    fornecedor = db.Column(db.Text)
+    modelo_compras = db.Column(db.Text, default="")
+    contrato_tipo = db.Column(db.Text, default="")
+    nova_etapa_negociacao = db.Column(db.Text, default="")
 
-    convenio_empresas = db.Column(db.Text)
-    reembolso = db.Column(db.Text)
-
-    modelo_compras = db.Column(db.Text)
-    contrato_tipo = db.Column(db.Text)
-    nova_etapa_negociacao = db.Column(db.Text)
-
-    def __repr__(self):
-        return f"<DadosHospital hospital_id={self.hospital_id}>"
 
 
 class ProdutoHospital(db.Model):
@@ -139,7 +127,7 @@ class ProdutoHospital(db.Model):
     )
 
     nome_hospital = db.Column(db.String(255))
-    marca_planilha = db.Column(db.String(50))  # PRODIET / NESTLÉ / DANONE / FRESENIUS
+    marca_planilha = db.Column(db.String(50))
 
     produto = db.Column(db.String(255), nullable=False)
     quantidade = db.Column(db.Integer, nullable=False, default=0)
@@ -155,6 +143,3 @@ class ProdutoHospital(db.Model):
     potassio = db.Column(db.String(50))
     vit_b12 = db.Column(db.String(50))
     gordura_saturada = db.Column(db.String(50))
-
-    def __repr__(self):
-        return f"<ProdutoHospital {self.produto} ({self.quantidade})>"

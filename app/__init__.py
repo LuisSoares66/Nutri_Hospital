@@ -16,7 +16,11 @@ def create_app():
     # importa models depois do db existir
     from app import models  # noqa: F401
 
+    # Blueprints
     from app.routes import bp
     app.register_blueprint(bp)
+
+    from app.auth import auth_bp
+    app.register_blueprint(auth_bp)  # ou url_prefix=""
 
     return app

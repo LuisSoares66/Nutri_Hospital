@@ -1,70 +1,156 @@
+{# app/templates/produtos_hospitais.html #}
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
 
-  <h1>Produtos – {{ hospital.nome_hospital }}</h1>
+<div class="container mt-4">
+  <h2>{{ hospital.nome_hospital }} - Produtos</h2>
 
-  <div class="actions" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
-    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+  {% include "_hospital_tabs.html" %}
 
-    <a class="btn secondary" href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">
-      📄 Relatórios
-    </a>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+
+      <form method="POST" action="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">
+        <input type="hidden" name="produto_id" value="">
+        <input type="hidden" name="marca_planilha" id="marca_planilha" value="">
+
+        <div class="row g-3">
+          <!-- MARCAS (abas do Excel) -->
+          <div class="col-md-4">
+            <label class="form-label">Marca (abas do produtos.xlsx)</label>
+            <select id="marca_select" class="form-select" size="12">
+              {% for m in marcas_catalogo %}
+                <option value="{{ m }}">{{ m }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Selecione a marca para carregar os produtos dessa aba.</small>
+          </div>
+
+          <!-- PRODUTOS (coluna PRODUTO da aba selecionada) -->
+          <div class="col-md-5">
+            <label class="form-label">Produto (coluna PRODUTO)</label>
+            <select id="produto_select" class="form-select" size="12">
+              <option value="" disabled>Selecione uma marca…</option>
+            </select>
+            <small class="text-muted">Selecione o produto para preencher o campo abaixo.</small>
+          </div>
+
+          <!-- FORM -->
+          <div class="col-md-3">
+            <label class="form-label">Produto selecionado</label>
+            <input type="text" class="form-control" name="produto" id="produto_input" required>
+
+            <label class="form-label mt-2">Quantidade</label>
+            <input type="number" class="form-control" name="quantidade" value="1" min="0">
+
+            <button class="btn btn-success w-100 mt-3" type="submit">
+              Salvar
+            </button>
+
+            <a class="btn btn-outline-secondary w-100 mt-2"
+               href="{{ url_for('main.editar_produtos_hospital', hospital_id=hospital.id) }}">
+              Editar/Remover
+            </a>
+          </div>
+        </div>
+      </form>
+
+    </div>
   </div>
 
-  <hr>
+  <!-- LISTA CADASTRADA -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="mb-3">Produtos cadastrados</h5>
 
-  <h2>Adicionar produto</h2>
-  <form method="POST" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:20px;">
-
-    <div>
-      <label>Marca/Planilha</label><br>
-      <select name="marca_planilha" required>
-        <option value="">Selecione</option>
-        <option value="PRODIET">PRODIET</option>
-        <option value="NESTLÉ">NESTLÉ</option>
-        <option value="DANONE">DANONE</option>
-        <option value="FRESENIUS">FRESENIUS</option>
-      </select>
-    </div>
-
-    <div style="min-width:260px;">
-      <label>Produto</label><br>
-      <input type="text" name="produto" placeholder="Nome do produto" required>
-    </div>
-
-    <div style="width:120px;">
-      <label>Quantidade</label><br>
-      <input type="number" name="quantidade" value="0" min="0">
-    </div>
-
-    <button class="btn primary" type="submit">+ Adicionar</button>
-  </form>
-
-  <h2>Produtos cadastrados</h2>
-
-  {% if produtos and produtos|length > 0 %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Marca</th>
-          <th>Produto</th>
-          <th>Quantidade</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in produtos %}
+      <table class="table table-sm table-hover align-middle">
+        <thead class="table-light">
           <tr>
-            <td>{{ p.marca_planilha or "" }}</td>
+            <th>Marca</th>
+            <th>Produto</th>
+            <th style="width:120px;">Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in produtos %}
+          <tr>
+            <td>{{ p.marca_planilha }}</td>
             <td>{{ p.produto }}</td>
             <td>{{ p.quantidade }}</td>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>Nenhum produto cadastrado para este hospital.</p>
-  {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
 
+      {% if not produtos %}
+        <p class="text-muted mb-0">Nenhum produto cadastrado.</p>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+<script>
+  const marcaSelect  = document.getElementById("marca_select");
+  const produtoSelect = document.getElementById("produto_select");
+  const produtoInput = document.getElementById("produto_input");
+  const marcaHidden  = document.getElementById("marca_planilha");
+
+  async function carregarProdutos(marca) {
+    produtoSelect.innerHTML = `<option value="" disabled>Carregando…</option>`;
+    try {
+      const resp = await fetch(`/api/catalogo_produtos?marca=${encodeURIComponent(marca)}`);
+      const data = await resp.json();
+
+      produtoSelect.innerHTML = "";
+      const lista = (data && data.produtos) ? data.produtos : [];
+
+      if (!lista.length) {
+        produtoSelect.innerHTML = `<option value="" disabled>Nenhum produto nessa marca</option>`;
+        return;
+      }
+
+      for (const p of lista) {
+        const opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = p;
+        produtoSelect.appendChild(opt);
+      }
+    } catch (e) {
+      produtoSelect.innerHTML = `<option value="" disabled>Erro ao carregar produtos</option>`;
+    }
+  }
+
+  marcaSelect.addEventListener("change", (e) => {
+    const marca = e.target.value || "";
+    marcaHidden.value = marca;
+    produtoInput.value = "";
+    carregarProdutos(marca);
+  });
+
+  produtoSelect.addEventListener("change", (e) => {
+    const prod = e.target.value || "";
+    produtoInput.value = prod;
+  });
+
+  // opcional: já selecionar a primeira marca automaticamente
+  window.addEventListener("DOMContentLoaded", () => {
+    if (marcaSelect.options.length > 0) {
+      marcaSelect.selectedIndex = 0;
+      const marca = marcaSelect.value;
+      marcaHidden.value = marca;
+      carregarProdutos(marca);
+    }
+  });
+</script>
+
 {% endblock %}

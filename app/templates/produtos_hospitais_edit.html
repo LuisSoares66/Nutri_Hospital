@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1>Editar Produtos – {{ hospital.nome_hospital }}</h1>
+
+  <div class="row" style="margin-bottom:12px;">
+    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+    <a class="btn secondary" href="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">👁 Ver (somente leitura)</a>
+  </div>
+
+  <div class="card">
+    <h2>Novo produto</h2>
+    <form method="POST" class="grid3">
+      <div>
+        <label>Marca</label>
+        <select name="marca_planilha">
+          <option value="PRODIET">PRODIET</option>
+          <option value="NESTLÉ">NESTLÉ</option>
+          <option value="DANONE">DANONE</option>
+          <option value="FRESENIUS">FRESENIUS</option>
+        </select>
+      </div>
+      <div>
+        <label>Produto</label>
+        <input name="produto" required>
+      </div>
+      <div>
+        <label>Quantidade</label>
+        <input name="quantidade" type="number" min="0" value="0">
+      </div>
+      <div style="grid-column:1/-1;">
+        <button class="btn" type="submit">Salvar produto</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h2>Produtos cadastrados</h2>
+
+    {% if produtos %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Marca</th><th>Produto</th><th>Qtd</th><th style="width:120px;">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in produtos %}
+          <tr>
+            <td>{{ p.marca_planilha or "" }}</td>
+            <td>{{ p.produto }}</td>
+            <td>{{ p.quantidade }}</td>
+            <td>
+              <form method="POST"
+                    action="{{ url_for('main.excluir_produto', hospital_id=hospital.id, produto_id=p.id) }}"
+                    onsubmit="return confirm('Remover este produto?');">
+                <button class="btn danger" type="submit">Excluir</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>Nenhum produto cadastrado.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

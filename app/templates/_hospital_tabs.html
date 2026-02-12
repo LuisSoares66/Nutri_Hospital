@@ -1,0 +1,18 @@
+<div class="mb-3">
+  <div class="btn-group" role="group" aria-label="Hospital tabs">
+    <a class="btn btn-outline-secondary {% if request.path.endswith('/info') %}active{% endif %}"
+       href="{{ url_for('main.hospital_info', hospital_id=hospital.id) }}">INFO</a>
+
+    <a class="btn btn-outline-secondary {% if '/contatos' in request.path %}active{% endif %}"
+       href="{{ url_for('main.contatos', hospital_id=hospital.id) }}">CONTATOS</a>
+
+    <a class="btn btn-outline-secondary {% if request.path.endswith('/dados') %}active{% endif %}"
+       href="{{ url_for('main.dados_hospital', hospital_id=hospital.id) }}">DADOS</a>
+
+    <a class="btn btn-outline-secondary {% if '/produtos' in request.path %}active{% endif %}"
+       href="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">PRODUTOS</a>
+
+    <a class="btn btn-outline-secondary {% if '/relatorios' in request.path and not request.path.endswith('/relatorios/pdf') %}active{% endif %}"
+       href="{{ url_for('main.relatorios', hospital_id=hospital.id) }}">RELATÓRIOS</a>
+  </div>
+</div>
