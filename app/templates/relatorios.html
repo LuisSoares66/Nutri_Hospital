@@ -1,116 +1,119 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="container">
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatório</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
 
-  <h1>Relatórios – {{ hospital.nome_hospital }}</h1>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('main.hospitais') }}">Hospital Management</a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.hospital_info', hospital_id=hospital.id) }}">Info</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.contatos', hospital_id=hospital.id) }}">Contatos</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.dados_hospital', hospital_id=hospital.id) }}">Dados</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.produtos_hospital', hospital_id=hospital.id) }}">Produtos</a>
+    </div>
+  </div>
+</nav>
 
-  <div class="actions" style="display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;">
-    <a class="btn secondary" href="{{ url_for('main.hospitais') }}">⬅ Voltar</a>
+<div class="container py-4">
 
-    <a class="btn secondary"
-       href="{{ url_for('main.relatorio_pdf', hospital_id=hospital.id) }}">
-      ⬇ Baixar PDF
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="mb-0">Relatório do Hospital</h4>
+      <div class="text-muted">{{ hospital.nome_hospital }} (ID {{ hospital.id }})</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Voltar</a>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <a class="btn btn-dark" href="{{ url_for('main.relatorio_pdf', hospital_id=hospital.id) }}">
+      Baixar PDF
     </a>
 
-    <form method="POST" action="{{ url_for('main.relatorio_csv') }}" style="display:inline;">
+    <form method="POST" action="{{ url_for('main.relatorio_csv') }}">
       <input type="hidden" name="hospital_id" value="{{ hospital.id }}">
-      <button class="btn secondary" type="submit">⬇ Exportar CSV</button>
+      <button class="btn btn-outline-dark" type="submit">Baixar CSV</button>
     </form>
   </div>
 
-  <hr>
+  <div class="row g-3">
 
-  <!-- DADOS DO HOSPITAL -->
-  <h2>Dados do Hospital</h2>
-  {% if not dados %}
-    <p>Nenhum dado cadastrado.</p>
-  {% else %}
-    <table class="table">
-      <tbody>
-        <tr><th>Especialidade</th><td>{{ dados.especialidade or "" }}</td></tr>
-        <tr><th>Leitos</th><td>{{ dados.leitos or "" }}</td></tr>
-        <tr><th>Leitos UTI</th><td>{{ dados.leitos_uti or "" }}</td></tr>
-        <tr><th>Fatores decisórios</th><td>{{ dados.fatores_decisorios or "" }}</td></tr>
-        <tr><th>Prioridades atendimento</th><td>{{ dados.prioridades_atendimento or "" }}</td></tr>
-        <tr><th>Certificação</th><td>{{ dados.certificacao or "" }}</td></tr>
-        <tr><th>EMTN</th><td>{{ dados.emtn or "" }}</td></tr>
-        <tr><th>Membros EMTN</th><td>{{ dados.emtn_membros or "" }}</td></tr>
-        <tr><th>Comissão feridas</th><td>{{ dados.comissao_feridas or "" }}</td></tr>
-        <tr><th>Membros comissão feridas</th><td>{{ dados.comissao_feridas_membros or "" }}</td></tr>
-        <tr><th>Nutrição enteral/dia</th><td>{{ dados.nutricao_enteral_dia or "" }}</td></tr>
-        <tr><th>Pacientes TNO/dia</th><td>{{ dados.pacientes_tno_dia or "" }}</td></tr>
-        <tr><th>Altas orientadas</th><td>{{ dados.altas_orientadas or "" }}</td></tr>
-        <tr><th>Quem orienta alta</th><td>{{ dados.quem_orienta_alta or "" }}</td></tr>
-        <tr><th>Protocolo evolução dieta</th><td>{{ dados.protocolo_evolucao_dieta or "" }}</td></tr>
-        <tr><th>Qual protocolo evolução dieta</th><td>{{ dados.protocolo_evolucao_dieta_qual or "" }}</td></tr>
-        <tr><th>Protocolo lesão/feridas</th><td>{{ dados.protocolo_lesao_pressao or "" }}</td></tr>
-        <tr><th>Qual protocolo lesão/feridas</th><td>{{ dados.protocolo_lesao_pressao_qual or "" }}</td></tr>
-        <tr><th>Maior desafio</th><td>{{ dados.maior_desafio or "" }}</td></tr>
-        <tr><th>Dieta padrão</th><td>{{ dados.dieta_padrao or "" }}</td></tr>
-        <tr><th>Bomba de infusão (modelo)</th><td>{{ dados.bomba_infusao_modelo or "" }}</td></tr>
-        <tr><th>Fornecedor</th><td>{{ dados.fornecedor or "" }}</td></tr>
-        <tr><th>Convênio com empresas</th><td>{{ dados.convenio_empresas or "" }}</td></tr>
-        <tr><th>Reembolso</th><td>{{ dados.reembolso or "" }}</td></tr>
-        <tr><th>Modelo de compras</th><td>{{ dados.modelo_compras or "" }}</td></tr>
-        <tr><th>Contrato tipo</th><td>{{ dados.contrato_tipo or "" }}</td></tr>
-        <tr><th>Nova etapa negociação</th><td>{{ dados.nova_etapa_negociacao or "" }}</td></tr>
-      </tbody>
-    </table>
-  {% endif %}
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-2">Contatos ({{ contatos|length }})</h6>
+          {% if contatos %}
+            <ul class="mb-0">
+              {% for c in contatos %}
+                <li>{{ c.nome_contato }} — {{ c.cargo }} — {{ c.telefone }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-muted">Sem contatos cadastrados.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-  <hr>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-2">Dados</h6>
+          {% if dados %}
+            <div><b>Especialidade:</b> {{ dados.especialidade or '-' }}</div>
+            <div><b>Leitos:</b> {{ dados.leitos or '-' }}</div>
+            <div><b>Leitos UTI:</b> {{ dados.leitos_uti or '-' }}</div>
+            <hr>
+            <div><b>Fatores decisórios:</b> {{ dados.fatores_decisorios or '-' }}</div>
+            <div class="mt-2"><b>Prioridades:</b> {{ dados.prioridades_atendimento or '-' }}</div>
+          {% else %}
+            <div class="text-muted">Sem dados cadastrados.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-  <!-- CONTATOS -->
-  <h2>Contatos</h2>
-  {% if contatos|length == 0 %}
-    <p>Nenhum contato cadastrado.</p>
-  {% else %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Cargo</th>
-          <th>Telefone</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in contatos %}
-        <tr>
-          <td>{{ c.nome_contato }}</td>
-          <td>{{ c.cargo or "" }}</td>
-          <td>{{ c.telefone or "" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-2">Produtos ({{ produtos|length }})</h6>
+          {% if produtos %}
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Marca</th>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for p in produtos %}
+                    <tr>
+                      <td>{{ p.marca_planilha }}</td>
+                      <td>{{ p.produto }}</td>
+                      <td>{{ p.quantidade }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-muted">Sem produtos cadastrados.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-  <hr>
-
-  <!-- PRODUTOS -->
-  <h2>Produtos</h2>
-  {% if produtos|length == 0 %}
-    <p>Nenhum produto cadastrado.</p>
-  {% else %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Marca</th>
-          <th>Produto</th>
-          <th>Quantidade</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in produtos %}
-        <tr>
-          <td>{{ p.marca_planilha or "" }}</td>
-          <td>{{ p.produto }}</td>
-          <td>{{ p.quantidade }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+  </div>
 
 </div>
-{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

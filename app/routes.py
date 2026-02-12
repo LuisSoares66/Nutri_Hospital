@@ -194,28 +194,37 @@ def contatos(hospital_id):
 @bp.route("/hospitais/<int:hospital_id>/dados", methods=["GET", "POST"])
 def dados_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
-    dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
 
+    # garante que existe 1 registro de dados por hospital
+    dados = DadosHospital.query.filter_by(hospital_id=hospital_id).first()
     if not dados:
         dados = DadosHospital(hospital_id=hospital_id)
         db.session.add(dados)
         db.session.commit()
 
     if request.method == "POST":
-        dados.especialidade = request.form.get("especialidade")
-        dados.leitos = request.form.get("leitos")
-        dados.leitos_uti = request.form.get("leitos_uti")
-        dados.fatores_decisorios = request.form.get("fatores_decisorios")
-        dados.prioridades_atendimento = request.form.get("prioridades_atendimento")
-        dados.certificacao = request.form.get("certificacao")
-        dados.emtn = request.form.get("emtn")
-        dados.emtn_membros = request.form.get("emtn_membros")
+        try:
+            # IMPORTANTE: os "name=" do HTML precisam bater com isso aqui
+            dados.especialidade = (request.form.get("especialidade") or "").strip()
+            dados.leitos = (request.form.get("leitos") or "").strip()
+            dados.leitos_uti = (request.form.get("leitos_uti") or "").strip()
+            dados.fatores_decisorios = (request.form.get("fatores_decisorios") or "").strip()
+            dados.prioridades_atendimento = (request.form.get("prioridades_atendimento") or "").strip()
+            dados.certificacao = (request.form.get("certificacao") or "").strip()
+            dados.emtn = (request.form.get("emtn") or "").strip()
+            dados.emtn_membros = (request.form.get("emtn_membros") or "").strip()
 
-        db.session.commit()
-        flash("Dados atualizados.", "success")
+            db.session.commit()
+            flash("Dados atualizados.", "success")
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar dados: {e}", "error")
+
         return redirect(url_for("main.dados_hospital", hospital_id=hospital_id))
 
     return render_template("dados_hospitais.html", hospital=hospital, dados=dados)
+
 
 
 # ======================================================
@@ -226,32 +235,60 @@ def produtos_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
     if request.method == "POST":
-        produto_id = request.form.get("produto_id")
-
-        if produto_id:
-            produto = ProdutoHospital.query.get_or_404(produto_id)
-            if produto.hospital_id != hospital_id:
-                flash("Produto não pertence a este hospital.", "error")
-                return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
-        else:
-            produto = ProdutoHospital(hospital_id=hospital_id)
-            db.session.add(produto)
-
-        produto.nome_hospital = hospital.nome_hospital
-        produto.marca_planilha = (request.form.get("marca_planilha") or "").strip()
-        produto.produto = (request.form.get("produto") or "").strip()
-
         try:
-            produto.quantidade = int(request.form.get("quantidade") or 0)
-        except:
-            produto.quantidade = 0
+            produto_id_raw = (request.form.get("produto_id") or "").strip()
 
-        db.session.commit()
-        flash("Produto salvo.", "success")
+            # EDITAR ou NOVO
+            if produto_id_raw:
+                try:
+                    produto_id = int(produto_id_raw)
+                except:
+                    produto_id = None
+
+                if not produto_id:
+                    flash("ID do produto inválido.", "error")
+                    return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+
+                produto = ProdutoHospital.query.get_or_404(produto_id)
+                if produto.hospital_id != hospital_id:
+                    flash("Produto não pertence a este hospital.", "error")
+                    return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+            else:
+                produto = ProdutoHospital(hospital_id=hospital_id)
+                db.session.add(produto)
+
+            produto.nome_hospital = hospital.nome_hospital
+            produto.marca_planilha = (request.form.get("marca_planilha") or "").strip()
+            produto.produto = (request.form.get("produto") or "").strip()
+
+            qtd_raw = (request.form.get("quantidade") or "").strip()
+            try:
+                produto.quantidade = int(float(qtd_raw)) if qtd_raw else 0
+            except:
+                produto.quantidade = 0
+
+            db.session.commit()
+            flash("Produto salvo.", "success")
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar produto: {e}", "error")
+
         return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
-    produtos_db = ProdutoHospital.query.filter_by(hospital_id=hospital_id).order_by(ProdutoHospital.id.desc()).all()
-    return render_template("produtos_hospitais.html", hospital=hospital, produtos=produtos_db)
+    produtos_db = (
+        ProdutoHospital.query
+        .filter_by(hospital_id=hospital_id)
+        .order_by(ProdutoHospital.id.desc())
+        .all()
+    )
+
+    return render_template(
+        "produtos_hospitais.html",
+        hospital=hospital,
+        produtos=produtos_db
+    )
+
 
 
 @bp.route("/hospitais/<int:hospital_id>/produtos/<int:produto_id>/excluir", methods=["POST"])
@@ -261,10 +298,34 @@ def excluir_produto(hospital_id, produto_id):
         flash("Produto não pertence a este hospital.", "error")
         return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
-    db.session.delete(p)
-    db.session.commit()
-    flash("Produto removido.", "success")
+    try:
+        db.session.delete(p)
+        db.session.commit()
+        flash("Produto removido.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao remover produto: {e}", "error")
+
     return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
+
+
+@bp.route("/hospitais/<int:hospital_id>/contatos/<int:contato_id>/excluir", methods=["POST"])
+def excluir_contato(hospital_id, contato_id):
+    c = Contato.query.get_or_404(contato_id)
+    if c.hospital_id != hospital_id:
+        flash("Contato não pertence a este hospital.", "error")
+        return redirect(url_for("main.contatos", hospital_id=hospital_id))
+
+    try:
+        db.session.delete(c)
+        db.session.commit()
+        flash("Contato removido.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao remover contato: {e}", "error")
+
+    return redirect(url_for("main.contatos", hospital_id=hospital_id))
+
 
 
 # ======================================================
