@@ -8,10 +8,12 @@
   <div style="display:flex; gap:12px; flex-wrap:wrap; margin:20px 0;">
 
     <!-- Importar Excel (uma vez) -->
-<form method="POST" action="{{ url_for('main.importar_excel_uma_vez') }}"
-      onsubmit="return confirm('Importar TODOS os dados do Excel?');">
-  <button class="btn secondary" type="submit">⬆ Importar Excel (uma vez)</button>
-</form>
+    <form method="POST"
+          action="{{ url_for('main.importar_excel_uma_vez') }}"
+          onsubmit="return confirm('Importar TODOS os dados do Excel? (apenas uma vez)');">
+      <button class="btn secondary" type="submit">⬆ Importar Excel (uma vez)</button>
+    </form>
+
 
     <!-- Zerar Banco (com senha) -->
     <form method="POST"

@@ -2,7 +2,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from openpyxl import load_workbook
-
+import load_catalogo_produtos_from_excel
 
 def _path(data_dir: str, filename: str) -> str:
     return os.path.join(data_dir, filename)
