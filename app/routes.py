@@ -92,6 +92,9 @@ def novo_hospital():
 
 
 from app.auth import admin_required
+from app.models import Hospital, Contato, DadosHospital, ProdutoHospital
+from app import db
+from flask import redirect, url_for, flash
 
 @bp.route("/hospitais/<int:hospital_id>/excluir", methods=["POST"])
 @admin_required
@@ -99,20 +102,20 @@ def excluir_hospital(hospital_id):
     hospital = Hospital.query.get_or_404(hospital_id)
 
     try:
-        # Remove dependências primeiro (evita FK violation mesmo se cascade falhar)
+        # apaga dependências na ordem (FK safe)
         Contato.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
         ProdutoHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
         DadosHospital.query.filter_by(hospital_id=hospital_id).delete(synchronize_session=False)
 
         db.session.delete(hospital)
         db.session.commit()
-
         flash("Hospital apagado com sucesso.", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Erro ao apagar hospital: {e}", "error")
 
     return redirect(url_for("main.hospitais"))
+
 
 
 # ======================================================
@@ -327,154 +330,144 @@ IMPORT_FLAG_KEY = "import_excel_done_v1"
 def _norm(s: str) -> str:
     return (s or "").strip().upper()
 
+
 @bp.route("/admin/importar_excel_uma_vez", methods=["POST"])
 @admin_required
 def importar_excel_uma_vez():
     try:
-        # trava "uma vez"
-        flag = AppMeta.query.filter_by(key=IMPORT_FLAG_KEY).first()
-        if flag and (flag.value or "").lower() == "true":
-            flash("Importação já foi realizada (uma vez).", "warning")
+        # trava para rodar só 1x
+        meta = AppMeta.query.get("import_done")
+        if meta and meta.value == "1":
+            flash("Importação já foi realizada.", "warning")
             return redirect(url_for("main.admin_panel"))
 
-        # se já tem hospital, bloqueia também
-        if Hospital.query.first():
-            flash("Já existem hospitais no banco. Use 'Zerar Banco' antes de reimportar.", "warning")
-            return redirect(url_for("main.admin_panel"))
+        data_dir = "data"
 
-        data_dir = os.path.join(os.getcwd(), "data")
+        # 1) Hospitais
+        rows_h = load_hospitais_from_excel(data_dir)
+        if not isinstance(rows_h, list):
+            raise Exception("hospitais.xlsx inválido: loader não retornou lista")
 
-        # ======================================================
-        # FASE 1: IMPORTA HOSPITAIS (COMMIT ANTES DE TUDO)
-        # ======================================================
-        rows_h = load_hospitais_from_excel(data_dir) or []
-        if rows_h and not isinstance(rows_h[0], dict):
-            raise ValueError("hospitais.xlsx retornou formato inválido (esperado lista de dict).")
+        name_to_id = {}
 
         for r in rows_h:
             nome = (r.get("nome_hospital") or "").strip()
             if not nome:
                 continue
 
-            db.session.add(Hospital(
+            h = Hospital(
                 nome_hospital=nome,
-                endereco=r.get("endereco"),
-                numero=r.get("numero"),
-                complemento=r.get("complemento"),
-                cep=r.get("cep"),
-                cidade=r.get("cidade"),
-                estado=r.get("estado"),
-            ))
+                endereco=(r.get("endereco") or "").strip(),
+                numero=(r.get("numero") or "").strip(),
+                complemento=(r.get("complemento") or "").strip(),
+                cep=(r.get("cep") or "").strip(),
+                cidade=(r.get("cidade") or "").strip(),
+                estado=(r.get("estado") or "").strip(),
+            )
+            db.session.add(h)
 
-        db.session.commit()
+        db.session.flush()  # pega IDs antes do commit
 
-        # mapa NOME -> ID REAL do banco
-        hospitais_db = Hospital.query.all()
-        nome_to_id = {_norm(h.nome_hospital): h.id for h in hospitais_db}
+        # monta mapa nome->id
+        for h in Hospital.query.all():
+            name_to_id[(h.nome_hospital or "").strip().upper()] = h.id
 
-        # ======================================================
-        # FASE 2: CONTATOS / DADOS / PRODUTOS (SEM AUTOF LUSH)
-        # ======================================================
-        with db.session.no_autoflush:
+        # 2) Contatos
+        rows_c = load_contatos_from_excel(data_dir)
+        if not isinstance(rows_c, list):
+            raise Exception("contatos.xlsx inválido")
 
-            # ---------------- CONTATOS ----------------
-            rows_c = load_contatos_from_excel(data_dir) or []
-            if rows_c and not isinstance(rows_c[0], dict):
-                raise ValueError("contatos.xlsx retornou formato inválido (esperado lista de dict).")
+        for r in rows_c:
+            nome_hosp = (r.get("hospital_nome") or r.get("nome_hospital") or "").strip()
+            key = nome_hosp.upper()
+            hospital_id = name_to_id.get(key)
 
-            for r in rows_c:
-                # ✅ pega nome do hospital por várias possibilidades
-                nome_hosp = (r.get("hospital_nome") or r.get("nome_hospital") or r.get("hospital") or "").strip()
-                hid = nome_to_id.get(_norm(nome_hosp))  # ✅ id REAL do banco
+            c = Contato(
+                hospital_id=hospital_id,  # pode ser None (você pediu permitir sem vínculo)
+                hospital_nome=nome_hosp,
+                nome_contato=(r.get("nome_contato") or "").strip() or "SEM NOME",
+                cargo=(r.get("cargo") or "").strip(),
+                telefone=(r.get("telefone") or "").strip(),
+            )
+            db.session.add(c)
 
-                # ⚠️ Se não achou hospital pelo nome, NÃO tenta usar hospital_id do Excel
-                if not hid:
-                    # opção 1: gravar contato sem vínculo
-                    hid = None
-                    # opção 2 (mais segura): pular
-                    # continue
+        # 3) Dados do hospital (1 por hospital)
+        rows_d = load_dados_hospitais_from_excel(data_dir)
+        if not isinstance(rows_d, list):
+            raise Exception("dadoshospitais.xlsx inválido")
 
-                nome_contato = (r.get("nome_contato") or "").strip()
-                if not nome_contato:
-                    continue
+        for r in rows_d:
+            nome_hosp = (r.get("nome_hospital") or r.get("Hospital") or "").strip()
+            # se sua planilha não tem nome, tenta id_hospital mas mapeando por ordem não é seguro
+            key = nome_hosp.upper()
+            hospital_id = name_to_id.get(key)
+            if not hospital_id:
+                continue
 
-                db.session.add(Contato(
-                    hospital_id=hid,          # ✅ ou None
-                    hospital_nome=nome_hosp,
-                    nome_contato=nome_contato,
-                    cargo=r.get("cargo"),
-                    telefone=r.get("telefone"),
-                ))
+            # evita duplicar (unique hospital_id)
+            if DadosHospital.query.filter_by(hospital_id=hospital_id).first():
+                continue
 
-            # ---------------- DADOS HOSPITAIS ----------------
-            rows_d = load_dados_hospitais_from_excel(data_dir) or []
-            if rows_d and not isinstance(rows_d[0], dict):
-                raise ValueError("dadoshospitais.xlsx retornou formato inválido (esperado lista de dict).")
+            d = DadosHospital(
+                hospital_id=hospital_id,
+                especialidade=(r.get("Qual a especialidade do hospital?") or "").strip(),
+                leitos=str(r.get("Quantos leitos?") or "").strip(),
+                leitos_uti=str(r.get("Quantos leitos de UTI?") or "").strip(),
+                fatores_decisorios=(r.get("Quais fatores são decisórios para o hospital escolher um determinado produto?") or "").strip(),
+                prioridades_atendimento=(r.get("Quais as prioridas do hospital para um atendimento nutricional de excelencia?") or "").strip(),
+                certificacao=(r.get("O hospital tem certificação ONA, CANADIAN, Joint Comission,...)?") or "").strip(),
+                emtn=(r.get("O hospital tem EMTN?") or "").strip(),
+                emtn_membros=(r.get("Se sim, quais os membro (nomes e especialidade)?") or "").strip(),
+            )
+            db.session.add(d)
 
-            for r in rows_d:
-                nome_hosp = (r.get("hospital_nome") or r.get("nome_hospital") or r.get("hospital") or "").strip()
-                hid = nome_to_id.get(_norm(nome_hosp))
-                if not hid:
-                    continue
+        # 4) Produtos por hospital
+        rows_p = load_produtos_hospitais_from_excel(data_dir)
+        if not isinstance(rows_p, list):
+            raise Exception("produtoshospitais.xlsx inválido")
 
-                dados = DadosHospital.query.filter_by(hospital_id=hid).first()
-                if not dados:
-                    dados = DadosHospital(hospital_id=hid)
-                    db.session.add(dados)
+        for r in rows_p:
+            nome_hosp = (r.get("nome_hospital") or "").strip()
+            key = nome_hosp.upper()
+            hospital_id = name_to_id.get(key)
+            if not hospital_id:
+                continue
 
-                # ajuste conforme seus headers reais do excel
-                dados.especialidade = r.get("especialidade") or r.get("Qual a especialidade do hospital?")
-                dados.leitos = r.get("leitos") or r.get("Quantos leitos?")
-                dados.leitos_uti = r.get("leitos_uti") or r.get("Quantos leitos de UTI?")
-                dados.fatores_decisorios = r.get("fatores_decisorios") or r.get("Quais fatores são decisórios para o hospital escolher um determinado produto?")
-                dados.prioridades_atendimento = r.get("prioridades_atendimento") or r.get("Quais as prioridas do hospital para um atendimento nutricional de excelencia?")
-                dados.certificacao = r.get("certificacao") or r.get("O hospital tem certificação ONA, CANADIAN, Joint Comission,...)?")
-                dados.emtn = r.get("emtn") or r.get("O hospital tem EMTN?")
-                dados.emtn_membros = r.get("emtn_membros") or r.get("Se sim, quais os membro (nomes e especialidade)?")
+            produto_nome = (r.get("produto") or "").strip()
+            if not produto_nome:
+                continue
 
-            # ---------------- PRODUTOS ----------------
-            rows_p = load_produtos_hospitais_from_excel(data_dir) or []
-            if rows_p and not isinstance(rows_p[0], dict):
-                raise ValueError("produtoshospitais.xlsx retornou formato inválido (esperado lista de dict).")
+            qtd_raw = str(r.get("quantidade") or "").strip()
+            try:
+                qtd = int(float(qtd_raw)) if qtd_raw else 0
+            except:
+                qtd = 0
 
-            for r in rows_p:
-                nome_hosp = (r.get("nome_hospital") or r.get("hospital_nome") or r.get("hospital") or "").strip()
-                hid = nome_to_id.get(_norm(nome_hosp))
-                if not hid:
-                    continue
+            p = ProdutoHospital(
+                hospital_id=hospital_id,
+                nome_hospital=nome_hosp,
+                marca_planilha=(r.get("marca_planilha") or "").strip(),
+                produto=produto_nome,
+                quantidade=qtd,
+            )
+            db.session.add(p)
 
-                prod = (r.get("produto") or "").strip()
-                if not prod:
-                    continue
-
-                qtd = r.get("quantidade") or 0
-                try:
-                    qtd = int(qtd)
-                except:
-                    qtd = 0
-
-                db.session.add(ProdutoHospital(
-                    hospital_id=hid,
-                    nome_hospital=nome_hosp,
-                    marca_planilha=r.get("marca_planilha") or r.get("marca") or "",
-                    produto=prod,
-                    quantidade=qtd,
-                ))
-
-        # marca flag
-        if not flag:
-            db.session.add(AppMeta(key=IMPORT_FLAG_KEY, value="true"))
+        # marca import realizado
+        if not meta:
+            meta = AppMeta(key="import_done", value="1")
+            db.session.add(meta)
         else:
-            flag.value = "true"
+            meta.value = "1"
 
         db.session.commit()
-        flash("Importação completa concluída (Hospitais + Contatos + Dados + Produtos).", "success")
+        flash("Importação completa concluída (hospitais + contatos + dados + produtos).", "success")
         return redirect(url_for("main.admin_panel"))
 
     except Exception as e:
         db.session.rollback()
-        flash(f"Erro ao importar: {e}", "danger")
+        flash(f"Erro ao importar: {e}", "error")
         return redirect(url_for("main.admin_panel"))
+
 
 
 
