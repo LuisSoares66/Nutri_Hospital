@@ -9,13 +9,12 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20260212_add_campos_dados_hospital"
-down_revision = "e797b7ad3ee2_init"
+down_revision = "e797b7ad3ee2"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    # Postgres: idempotente com IF NOT EXISTS
     op.execute("ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS comissao_feridas TEXT DEFAULT '';")
     op.execute("ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS comissao_feridas_membros TEXT DEFAULT '';")
 
@@ -45,12 +44,7 @@ def upgrade():
     op.execute("ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS contrato_tipo TEXT DEFAULT '';")
     op.execute("ALTER TABLE dados_hospitais ADD COLUMN IF NOT EXISTS nova_etapa_negociacao TEXT DEFAULT '';")
 
-    # (Opcional) se você quer garantir 1:1 por hospital e ainda não tinha unique:
-    # op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_dados_hospitais_hospital_id ON dados_hospitais (hospital_id);")
-
-
 def downgrade():
-    # downgrade também idempotente com IF EXISTS
     op.execute("ALTER TABLE dados_hospitais DROP COLUMN IF EXISTS nova_etapa_negociacao;")
     op.execute("ALTER TABLE dados_hospitais DROP COLUMN IF EXISTS contrato_tipo;")
     op.execute("ALTER TABLE dados_hospitais DROP COLUMN IF EXISTS modelo_compras;")
