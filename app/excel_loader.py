@@ -307,3 +307,60 @@ def load_catalogo_produtos_from_excel(data_dir: str = "data"):
         out.append({"marca_planilha": marca, "produto": prod})
 
     return out
+
+
+import os
+import pandas as pd
+
+def load_marcas_from_produtos_excel(data_dir: str = "data") -> list[str]:
+    """
+    Retorna as 'marcas' como os nomes das abas do data/produtos.xlsx
+    """
+    path = os.path.join(data_dir, "produtos.xlsx")
+    if not os.path.exists(path):
+        return []
+
+    xls = pd.ExcelFile(path)
+    # remove abas vazias/estranhas se quiser; aqui devolve todas
+    marcas = [s.strip() for s in xls.sheet_names if str(s).strip()]
+    return sorted(marcas)
+
+
+def load_produtos_by_marca_from_produtos_excel(marca: str, data_dir: str = "data") -> list[str]:
+    """
+    Recebe a 'marca' (nome da aba) e retorna os produtos da coluna PRODUTO dessa aba.
+    """
+    path = os.path.join(data_dir, "produtos.xlsx")
+    if not os.path.exists(path):
+        return []
+
+    marca = (marca or "").strip()
+    if not marca:
+        return []
+
+    # lê somente a aba selecionada
+    df = pd.read_excel(path, sheet_name=marca, dtype=str).fillna("")
+
+    # coluna PRODUTO pode vir como "PRODUTO", "Produto", etc
+    col_prod = None
+    for c in df.columns:
+        if str(c).strip().upper() == "PRODUTO":
+            col_prod = c
+            break
+    if not col_prod:
+        # fallback: primeira coluna
+        col_prod = df.columns[0] if len(df.columns) else None
+
+    if not col_prod:
+        return []
+
+    produtos = []
+    for v in df[col_prod].tolist():
+        p = (v or "").strip()
+        if p:
+            produtos.append(p)
+
+    # remove duplicados mantendo ordem e ordena (se quiser manter ordem original, remova sorted)
+    produtos = sorted(list(dict.fromkeys(produtos)))
+    return produtos
+

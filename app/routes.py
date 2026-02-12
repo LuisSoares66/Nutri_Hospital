@@ -457,18 +457,15 @@ def produtos_hospital(hospital_id):
     rows = load_catalogo_produtos_from_excel("data") or []
     marcas = sorted({(r.get("marca") or r.get("marca_planilha") or "").strip().upper() for r in rows if (r.get("marca") or r.get("marca_planilha"))})
 
+    marcas = load_marcas_from_produtos_excel("data")
+
     return render_template(
         "produtos_hospitais.html",
         hospital=hospital,
         produtos=produtos_db,
         marcas_catalogo=marcas
-        )
-
-    return render_template(
-        "produtos_hospitais.html",
-        hospital=hospital,
-        produtos=produtos_db
     )
+
 
 
 
@@ -853,5 +850,15 @@ def api_catalogo_produtos():
     produtos = sorted(list(dict.fromkeys([p.strip() for p in produtos if p.strip()])))
 
     return jsonify({"marca": marca, "produtos": produtos})
+
+from flask import jsonify
+from app.excel_loader import load_marcas_from_produtos_excel, load_produtos_by_marca_from_produtos_excel
+
+@bp.route("/api/catalogo_produtos", methods=["GET"])
+def api_catalogo_produtos():
+    marca = (request.args.get("marca") or "").strip()
+    produtos = load_produtos_by_marca_from_produtos_excel(marca, "data")
+    return jsonify({"marca": marca, "produtos": produtos})
+
 
 
