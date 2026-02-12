@@ -68,14 +68,16 @@ def novo_hospital():
             return redirect(url_for("main.novo_hospital"))
 
         h = Hospital(
-            nome_hospital=nome,
-            endereco=(request.form.get("endereco") or "").strip(),
-            numero=(request.form.get("numero") or "").strip(),
-            complemento=(request.form.get("complemento") or "").strip(),
-            cep=(request.form.get("cep") or "").strip(),
-            cidade=(request.form.get("cidade") or "").strip(),
-            estado=(request.form.get("estado") or "").strip(),
+            id=r["id_hospital"],  # <- IMPORTANTÍSSIMO
+            nome_hospital=r["nome_hospital"],
+            endereco=r["endereco"],
+            numero=r["numero"],
+            complemento=r["complemento"],
+            cep=r["cep"],
+            cidade=r["cidade"],
+            estado=r["estado"],
         )
+
 
         try:
             db.session.add(h)
