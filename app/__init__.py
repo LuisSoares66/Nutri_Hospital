@@ -2,10 +2,18 @@
 from flask import Flask
 from config import Config
 from app.extensions import db, migrate
+from sqlalchemy import text
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    with app.app_context():
+        try:
+            db.session.execute(text("SELECT 1"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     # init extensions
     db.init_app(app)
