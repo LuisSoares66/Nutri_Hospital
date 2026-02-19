@@ -203,10 +203,20 @@ def admin_panel():
 # ======================================================
 # HOSPITAIS
 # ======================================================
+from sqlalchemy.exc import OperationalError
+
 @bp.route("/hospitais")
 def hospitais():
-    hospitais_db = Hospital.query.order_by(Hospital.nome_hospital.asc()).all()
-    return render_template("hospitais.html", hospitais=hospitais_db)
+    try:
+        hospitais_db = Hospital.query.order_by(Hospital.nome_hospital.asc()).all()
+        return render_template("hospitais.html", hospitais=hospitais_db)
+    except OperationalError as e:
+        db.session.rollback()
+        return (
+            "Banco indisponível no momento (Render Postgres). Recarregue em 30s. "
+            f"Detalhe: {e}", 503
+        )
+
 
 
 @bp.route("/hospitais/novo", methods=["GET", "POST"])
