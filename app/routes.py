@@ -891,85 +891,120 @@ def api_catalogo_produtos():
 def editar_produtos_hospital(hospital_id):
     return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
-from openpyxl import Workbook
-from flask import send_file
 import io
+from datetime import datetime
+from flask import send_file, flash, redirect, url_for
+from openpyxl import Workbook
 
 @bp.route("/admin/backup_excel", methods=["GET"])
 @admin_required
 def backup_excel():
+    try:
+        wb = Workbook()
 
-    wb = Workbook()
-
-    # =========================
-    # HOSPITAIS
-    # =========================
-    ws_h = wb.active
-    ws_h.title = "Hospitais"
-
-    ws_h.append([
-        "id", "nome_hospital", "endereco", "numero",
-        "complemento", "cep", "cidade", "estado"
-    ])
-
-    for h in Hospital.query.all():
+        # =========================
+        # HOSPITAIS
+        # =========================
+        ws_h = wb.active
+        ws_h.title = "Hospitais"
         ws_h.append([
-            h.id, h.nome_hospital, h.endereco, h.numero,
-            h.complemento, h.cep, h.cidade, h.estado
+            "id", "nome_hospital", "endereco", "numero",
+            "complemento", "cep", "cidade", "estado"
         ])
+        for h in Hospital.query.order_by(Hospital.id.asc()).all():
+            ws_h.append([
+                h.id, h.nome_hospital, h.endereco, h.numero,
+                h.complemento, h.cep, h.cidade, h.estado
+            ])
 
-    # =========================
-    # CONTATOS
-    # =========================
-    ws_c = wb.create_sheet("Contatos")
-    ws_c.append(["id", "hospital_id", "nome", "cargo", "telefone"])
+        # =========================
+        # CONTATOS
+        # =========================
+        ws_c = wb.create_sheet("Contatos")
+        ws_c.append(["id", "hospital_id", "hospital_nome", "nome_contato", "cargo", "telefone"])
+        for c in Contato.query.order_by(Contato.id.asc()).all():
+            ws_c.append([
+                c.id, c.hospital_id, c.hospital_nome,
+                c.nome_contato, c.cargo, c.telefone
+            ])
 
-    for c in Contato.query.all():
-        ws_c.append([
-            c.id, c.hospital_id, c.nome_contato, c.cargo, c.telefone
-        ])
-
-    # =========================
-    # DADOS
-    # =========================
-    ws_d = wb.create_sheet("DadosHospital")
-    ws_d.append([
-        "id", "hospital_id", "especialidade", "leitos", "leitos_uti"
-    ])
-
-    for d in DadosHospital.query.all():
+        # =========================
+        # DADOS DO HOSPITAL (coloque as colunas que você tem no model)
+        # =========================
+        ws_d = wb.create_sheet("DadosHospital")
         ws_d.append([
-            d.id, d.hospital_id, d.especialidade,
-            d.leitos, d.leitos_uti
+            "id", "hospital_id",
+            "especialidade", "leitos", "leitos_uti",
+            "fatores_decisorios", "prioridades_atendimento", "certificacao",
+            "emtn", "emtn_membros",
+            "comissao_feridas", "comissao_feridas_membros",
+            "nutricao_enteral_dia", "pacientes_tno_dia",
+            "altas_orientadas", "quem_orienta_alta",
+            "protocolo_evolucao_dieta", "protocolo_evolucao_dieta_qual",
+            "protocolo_lesao_pressao", "maior_desafio", "dieta_padrao",
+            "bomba_infusao_modelo", "fornecedor",
+            "convenio_empresas", "convenio_empresas_modelo_pagamento",
+            "reembolso", "modelo_compras", "contrato_tipo", "nova_etapa_negociacao",
         ])
+        for d in DadosHospital.query.order_by(DadosHospital.id.asc()).all():
+            ws_d.append([
+                d.id, d.hospital_id,
+                d.especialidade, d.leitos, d.leitos_uti,
+                d.fatores_decisorios, d.prioridades_atendimento, d.certificacao,
+                d.emtn, d.emtn_membros,
+                getattr(d, "comissao_feridas", ""),
+                getattr(d, "comissao_feridas_membros", ""),
+                getattr(d, "nutricao_enteral_dia", ""),
+                getattr(d, "pacientes_tno_dia", ""),
+                getattr(d, "altas_orientadas", ""),
+                getattr(d, "quem_orienta_alta", ""),
+                getattr(d, "protocolo_evolucao_dieta", ""),
+                getattr(d, "protocolo_evolucao_dieta_qual", ""),
+                getattr(d, "protocolo_lesao_pressao", ""),
+                getattr(d, "maior_desafio", ""),
+                getattr(d, "dieta_padrao", ""),
+                getattr(d, "bomba_infusao_modelo", ""),
+                getattr(d, "fornecedor", ""),
+                getattr(d, "convenio_empresas", ""),
+                getattr(d, "convenio_empresas_modelo_pagamento", ""),
+                getattr(d, "reembolso", ""),
+                getattr(d, "modelo_compras", ""),
+                getattr(d, "contrato_tipo", ""),
+                getattr(d, "nova_etapa_negociacao", ""),
+            ])
 
-    # =========================
-    # PRODUTOS
-    # =========================
-    ws_p = wb.create_sheet("ProdutosHospital")
-    ws_p.append([
-        "id", "hospital_id", "marca_planilha",
-        "produto", "quantidade"
-    ])
+        # =========================
+        # PRODUTOS DO HOSPITAL
+        # =========================
+        ws_p = wb.create_sheet("ProdutosHospital")
+        ws_p.append(["id", "hospital_id", "nome_hospital", "marca_planilha", "produto", "quantidade"])
+        for p in ProdutoHospital.query.order_by(ProdutoHospital.id.asc()).all():
+            ws_p.append([
+                p.id, p.hospital_id, p.nome_hospital,
+                p.marca_planilha, p.produto, p.quantidade
+            ])
 
-    for p in ProdutoHospital.query.all():
-        ws_p.append([
-            p.id, p.hospital_id,
-            p.marca_planilha, p.produto,
-            p.quantidade
-        ])
+        # ===== salva em memória =====
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
 
-    # Salva em memória
-    output = io.BytesIO()
-    wb.save(output)
-    output.seek(0)
+        # nome com data/hora (horário BR)
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"backup_nutri_hospital_{ts}.xlsx"
 
-    return send_file(
-        output,
-        as_attachment=True,
-        download_name="backup_nutri_hospital.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            max_age=0
+        )
+
+    except Exception as e:
+        flash(f"Erro ao gerar backup: {e}", "error")
+        return redirect(url_for("main.admin_panel"))
+
 
 
 
