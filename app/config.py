@@ -6,7 +6,7 @@ class Config:
 
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,        # testa conexão antes de usar
-        "pool_recycle": 280,          # recicla antes do timeout comum
+        "pool_recycle": 120,          # recicla antes do timeout comum
         "pool_timeout": 30,
         "pool_size": 5,
         "max_overflow": 2,
