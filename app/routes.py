@@ -891,6 +891,87 @@ def api_catalogo_produtos():
 def editar_produtos_hospital(hospital_id):
     return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
+from openpyxl import Workbook
+from flask import send_file
+import io
+
+@bp.route("/admin/backup_excel", methods=["GET"])
+@admin_required
+def backup_excel():
+
+    wb = Workbook()
+
+    # =========================
+    # HOSPITAIS
+    # =========================
+    ws_h = wb.active
+    ws_h.title = "Hospitais"
+
+    ws_h.append([
+        "id", "nome_hospital", "endereco", "numero",
+        "complemento", "cep", "cidade", "estado"
+    ])
+
+    for h in Hospital.query.all():
+        ws_h.append([
+            h.id, h.nome_hospital, h.endereco, h.numero,
+            h.complemento, h.cep, h.cidade, h.estado
+        ])
+
+    # =========================
+    # CONTATOS
+    # =========================
+    ws_c = wb.create_sheet("Contatos")
+    ws_c.append(["id", "hospital_id", "nome", "cargo", "telefone"])
+
+    for c in Contato.query.all():
+        ws_c.append([
+            c.id, c.hospital_id, c.nome_contato, c.cargo, c.telefone
+        ])
+
+    # =========================
+    # DADOS
+    # =========================
+    ws_d = wb.create_sheet("DadosHospital")
+    ws_d.append([
+        "id", "hospital_id", "especialidade", "leitos", "leitos_uti"
+    ])
+
+    for d in DadosHospital.query.all():
+        ws_d.append([
+            d.id, d.hospital_id, d.especialidade,
+            d.leitos, d.leitos_uti
+        ])
+
+    # =========================
+    # PRODUTOS
+    # =========================
+    ws_p = wb.create_sheet("ProdutosHospital")
+    ws_p.append([
+        "id", "hospital_id", "marca_planilha",
+        "produto", "quantidade"
+    ])
+
+    for p in ProdutoHospital.query.all():
+        ws_p.append([
+            p.id, p.hospital_id,
+            p.marca_planilha, p.produto,
+            p.quantidade
+        ])
+
+    # Salva em memória
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="backup_nutri_hospital.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
 
 
 
