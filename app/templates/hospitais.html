@@ -66,6 +66,20 @@
         </thead>
         <tbody>
           {% if hospitais %}
+          <!-- 🔵 BOTÕES DE ORDENAÇÃO AQUI -->
+            <div class="mb-3 d-flex gap-2">
+
+                <a href="{{ url_for('main.hospitais', ordem='nome') }}"
+                  class="btn {% if ordem_atual == 'nome' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    🔤 Ordenar por Hospital
+                </a>
+
+                <a href="{{ url_for('main.hospitais', ordem='cidade') }}"
+                  class="btn {% if ordem_atual == 'cidade' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    🏙 Ordenar por Cidade
+                </a>
+
+            </div>
             {% for h in hospitais %}
               <tr>
                 <td>{{ h.id }}</td>
