@@ -997,14 +997,3 @@ def backup_excel():
         flash(f"Erro ao gerar backup: {e}", "error")
         return redirect(url_for("main.admin_panel"))
     
-@bp.route("/admin/fix_schema_hospitais", methods=["POST"])
-@admin_required
-def fix_schema_hospitais():
-    try:
-        with db.engine.begin() as conn:
-            conn.execute(text("ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_visita DATE;"))
-            conn.execute(text("ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_retorno DATE;"))
-        flash("Schema corrigido: datas adicionadas em hospitais ✅", "success")
-    except Exception as e:
-        flash(f"Erro ao corrigir schema (hospitais): {repr(e)}", "error")
-    return redirect(url_for("main.admin_panel"))
