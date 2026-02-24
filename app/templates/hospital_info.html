@@ -45,51 +45,46 @@
   <div class="card shadow-sm">
     <div class="card-body">
 
-      <form method="POST" action="{{ url_for('main.hospital_info', hospital_id=hospital.id) }}" class="row g-3">
+<form method="POST" action="{{ url_for('main.hospital_info', hospital_id=hospital.id) }}" class="row g-3">
 
-        <div class="col-12">
-          <label class="form-label">Nome do hospital *</label>
-          <input class="form-control" name="nome_hospital" value="{{ hospital.nome_hospital or '' }}" required>
-        </div>
+  <div class="col-12">
+    <label class="form-label">Nome do hospital *</label>
+    <input class="form-control" name="nome_hospital" value="{{ hospital.nome_hospital or '' }}" required>
+  </div>
 
-        <div class="col-12 col-md-8">
-          <label class="form-label">Endereço</label>
-          <input class="form-control" name="endereco" value="{{ hospital.endereco or '' }}">
-        </div>
+  <div class="col-12 col-md-8">
+    <label class="form-label">Endereço</label>
+    <input class="form-control" name="endereco" value="{{ hospital.endereco or '' }}">
+  </div>
 
-        <div class="col-12 col-md-4">
-          <label class="form-label">Número</label>
-          <input class="form-control" name="numero" value="{{ hospital.numero or '' }}">
-        </div>
+  <div class="col-12 col-md-4">
+    <label class="form-label">Número</label>
+    <input class="form-control" name="numero" value="{{ hospital.numero or '' }}">
+  </div>
 
-        <div class="col-12">
-          <label class="form-label">Complemento</label>
-          <input class="form-control" name="complemento" value="{{ hospital.complemento or '' }}">
-        </div>
+  <div class="col-12">
+    <label class="form-label">Complemento</label>
+    <input class="form-control" name="complemento" value="{{ hospital.complemento or '' }}">
+  </div>
 
-        <div class="col-12 col-md-4">
-          <label class="form-label">CEP</label>
-          <input class="form-control" name="cep" value="{{ hospital.cep or '' }}">
-        </div>
+  <div class="col-12 col-md-4">
+    <label class="form-label">CEP</label>
+    <input class="form-control" name="cep" value="{{ hospital.cep or '' }}">
+  </div>
 
-        <div class="col-12 col-md-6">
-          <label class="form-label">Cidade</label>
-          <input class="form-control" name="cidade" value="{{ hospital.cidade or '' }}">
-        </div>
+  <div class="col-12 col-md-6">
+    <label class="form-label">Cidade</label>
+    <input class="form-control" name="cidade" value="{{ hospital.cidade or '' }}">
+  </div>
 
-        <div class="col-12 col-md-2">
-          <label class="form-label">UF</label>
-          <input class="form-control" name="estado" maxlength="2" value="{{ hospital.estado or '' }}">
-        </div>
+  <div class="col-12 col-md-2">
+    <label class="form-label">UF</label>
+    <input class="form-control" name="estado" maxlength="2" value="{{ hospital.estado or '' }}">
+  </div>
 
-        <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary" type="submit">Salvar</button>
-          <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Cancelar</a>
-        </div>
-
-        <div class="row">
-  <div class="col-md-6">
-    <label for="data_visita">DATA DA VISITA</label>
+  <!-- ✅ NOVO: Datas -->
+  <div class="col-12 col-md-6">
+    <label class="form-label" for="data_visita">DATA DA VISITA</label>
     <input
       type="date"
       id="data_visita"
@@ -99,8 +94,8 @@
     >
   </div>
 
-  <div class="col-md-6">
-    <label for="data_retorno">DATA DE RETORNO</label>
+  <div class="col-12 col-md-6">
+    <label class="form-label" for="data_retorno">DATA DE RETORNO</label>
     <input
       type="date"
       id="data_retorno"
@@ -109,9 +104,13 @@
       class="form-control"
     >
   </div>
-</div>
 
-      </form>
+  <div class="col-12 d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Salvar</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Cancelar</a>
+  </div>
+
+</form>
 
     </div>
   </div>

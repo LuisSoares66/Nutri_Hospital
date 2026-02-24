@@ -13,11 +13,11 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
     <a class="navbar-brand" href="{{ url_for('main.hospitais') }}">Hospital Management</a>
+
     <div class="d-flex gap-2">
       <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.hospitais') }}">Hospitais</a>
       <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.relatorios_geral') }}">Relatórios</a>
-      <a href="{{ url_for('main.backup_excel') }}"    class="btn btn-success w-100 mb-2">   📥 Baixar Backup Excel (com data) </a>
-
+      <a class="btn btn-success btn-sm" href="{{ url_for('main.backup_excel') }}">📥 Baixar Backup Excel (com data)</a>
     </div>
   </div>
 </nav>
@@ -37,6 +37,7 @@
   {% endwith %}
 
   <div class="row g-3">
+
     <!-- IMPORTAÇÃO -->
     <div class="col-12 col-lg-6">
       <div class="card shadow-sm">
@@ -48,13 +49,21 @@
             <code>hospitais.xlsx</code>, <code>contatos.xlsx</code>, <code>dadoshospitais.xlsx</code>, <code>produtoshospitais.xlsx</code>.
           </p>
 
-          <form method="POST" action="{{ url_for('main.importar_excel_uma_vez') }}">
+          <form method="POST" action="{{ url_for('main.importar_excel_uma_vez') }}" class="mb-2">
             <button class="btn btn-primary w-100" type="submit">
               Importar agora
             </button>
           </form>
 
+          <!-- ✅ NOVO: Corrigir schema hospitais (datas) -->
+          <form method="POST" action="{{ url_for('main.fix_schema_hospitais') }}" class="mb-2">
+            <button class="btn btn-warning w-100" type="submit">
+              Corrigir Schema Hospitais (Datas Visita/Retorno)
+            </button>
+          </form>
+
           <hr>
+
           <small class="text-muted">
             Dica: se você já importou uma vez, o sistema bloqueia automaticamente.
             Para liberar novamente, use o reset do banco.
@@ -79,7 +88,7 @@
               <input class="form-control" type="password" name="reset_password" placeholder="Senha admin" required>
             </div>
             <div class="col-12">
-              <input class="form-control" type="text" name="confirm_text" placeholder='Digite APAGAR' required>
+              <input class="form-control" type="text" name="confirm_text" placeholder="Digite APAGAR" required>
             </div>
             <div class="col-12">
               <button class="btn btn-danger w-100" type="submit"
@@ -87,6 +96,8 @@
                 Resetar banco
               </button>
             </div>
+          </form>
+
           <form method="POST" action="{{ url_for('main.fix_schema_dados') }}" class="mt-2">
             <button class="btn btn-outline-primary w-100" type="submit">
               Corrigir schema (DadosHospital)
@@ -94,6 +105,7 @@
           </form>
 
           <hr>
+
           <small class="text-muted">
             Se estiver em produção (Render), confirme que é isso mesmo antes de executar.
           </small>
@@ -111,8 +123,8 @@
         </div>
       </div>
     </div>
-  </div>
 
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

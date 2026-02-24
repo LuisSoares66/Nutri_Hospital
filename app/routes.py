@@ -2,7 +2,7 @@ import io
 import csv
 import traceback
 from app.extensions import db
-
+from sqlalchemy import text
 import os
 from datetime import datetime
 from flask import jsonify, request
@@ -487,27 +487,6 @@ def produtos_hospital(hospital_id):
     data_dir = os.path.join(base_dir, "data")
 
     marcas = load_marcas_from_produtos_excel(data_dir)
-
-    return render_template(
-        "produtos_hospitais.html",
-        hospital=hospital,
-        produtos=produtos_db,
-        marcas_catalogo=marcas
-    )
-
-
-    # =======================
-    # GET (tela)
-    # =======================
-    produtos_db = (
-        ProdutoHospital.query
-        .filter_by(hospital_id=hospital_id)
-        .order_by(ProdutoHospital.id.desc())
-        .all()
-    )
-
-    # ✅ marcas = abas do data/produtos.xlsx
-    marcas = load_marcas_from_produtos_excel("data")
 
     return render_template(
         "produtos_hospitais.html",
@@ -1017,6 +996,25 @@ def backup_excel():
     except Exception as e:
         flash(f"Erro ao gerar backup: {e}", "error")
         return redirect(url_for("main.admin_panel"))
+    
+@bp.route("/admin/fix_schema_hospitais", methods=["POST"])
+@admin_required
+def fix_schema_hospitais():
+    try:
+        stmts = [
+            "ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_visita DATE;",
+            "ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_retorno DATE;",
+        ]
+        for s in stmts:
+            db.session.execute(text(s))
+
+        db.session.commit()
+        flash("Schema corrigido: datas adicionadas em hospitais ✅", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao corrigir schema: {e}", "error")
+
+    return redirect(url_for("main.admin_panel"))
 
 
 
