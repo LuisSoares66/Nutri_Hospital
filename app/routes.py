@@ -2,10 +2,8 @@ import io
 import csv
 import traceback
 from app.extensions import db
-from datetime import datetime
-from flask import send_file, flash, redirect, url_for
-from openpyxl import Workbook
 
+import os
 from datetime import datetime
 from flask import jsonify, request
 # cache simples pra não ler o Excel toda hora
@@ -207,28 +205,17 @@ def admin_panel():
 # ======================================================
 from sqlalchemy.exc import OperationalError
 
-from flask import request, render_template
-from app.models import Hospital
-
 @bp.route("/hospitais")
 def hospitais():
-    ordem = request.args.get("ordem", "nome")
-
-    if ordem == "cidade":
-        hospitais_db = Hospital.query.order_by(
-            Hospital.cidade.asc(),
-            Hospital.nome_hospital.asc()
-        ).all()
-    else:
-        hospitais_db = Hospital.query.order_by(
-            Hospital.nome_hospital.asc()
-        ).all()
-
-    return render_template(
-        "hospitais.html",
-        hospitais=hospitais_db,
-        ordem_atual=ordem
-    )
+    try:
+        hospitais_db = Hospital.query.order_by(Hospital.nome_hospital.asc()).all()
+        return render_template("hospitais.html", hospitais=hospitais_db)
+    except OperationalError as e:
+        db.session.rollback()
+        return (
+            "Banco indisponível no momento (Render Postgres). Recarregue em 30s. "
+            f"Detalhe: {e}", 503
+        )
 
 
 
@@ -289,6 +276,19 @@ def hospital_info(hospital_id):
         hospital.cep = (request.form.get("cep") or "").strip()
         hospital.cidade = (request.form.get("cidade") or "").strip()
         hospital.estado = (request.form.get("estado") or "").strip()
+
+        # ✅ NOVO: datas
+        def _parse_date(value: str):
+            value = (value or "").strip()
+            if not value:
+                return None
+            try:
+                return datetime.strptime(value, "%Y-%m-%d").date()
+            except Exception:
+                return None
+
+        hospital.data_visita = _parse_date(request.form.get("data_visita"))
+        hospital.data_retorno = _parse_date(request.form.get("data_retorno"))
 
         try:
             db.session.commit()
@@ -904,7 +904,10 @@ def api_catalogo_produtos():
 def editar_produtos_hospital(hospital_id):
     return redirect(url_for("main.produtos_hospital", hospital_id=hospital_id))
 
-
+import io
+from datetime import datetime
+from flask import send_file, flash, redirect, url_for
+from openpyxl import Workbook
 
 @bp.route("/admin/backup_excel", methods=["GET"])
 @admin_required

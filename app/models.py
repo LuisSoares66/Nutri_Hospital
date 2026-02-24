@@ -23,6 +23,9 @@ class Hospital(db.Model):
     cep = db.Column(db.String(20))
     cidade = db.Column(db.String(120))
     estado = db.Column(db.String(20))
+    
+    data_visita = db.Column(db.Date, nullable=True)
+    data_retorno = db.Column(db.Date, nullable=True)
 
     contatos = db.relationship(
         "Contato",

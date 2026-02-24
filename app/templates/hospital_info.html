@@ -86,6 +86,31 @@
           <button class="btn btn-primary" type="submit">Salvar</button>
           <a class="btn btn-outline-secondary" href="{{ url_for('main.hospitais') }}">Cancelar</a>
         </div>
+
+        <div class="row">
+  <div class="col-md-6">
+    <label for="data_visita">DATA DA VISITA</label>
+    <input
+      type="date"
+      id="data_visita"
+      name="data_visita"
+      value="{{ hospital.data_visita.strftime('%Y-%m-%d') if hospital.data_visita else '' }}"
+      class="form-control"
+    >
+  </div>
+
+  <div class="col-md-6">
+    <label for="data_retorno">DATA DE RETORNO</label>
+    <input
+      type="date"
+      id="data_retorno"
+      name="data_retorno"
+      value="{{ hospital.data_retorno.strftime('%Y-%m-%d') if hospital.data_retorno else '' }}"
+      class="form-control"
+    >
+  </div>
+</div>
+
       </form>
 
     </div>
