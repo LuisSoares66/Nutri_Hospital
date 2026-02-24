@@ -1001,28 +1001,10 @@ def backup_excel():
 @admin_required
 def fix_schema_hospitais():
     try:
-        stmts = [
-            "ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_visita DATE;",
-            "ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_retorno DATE;",
-        ]
-        for s in stmts:
-            db.session.execute(text(s))
-
-        db.session.commit()
+        with db.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_visita DATE;"))
+            conn.execute(text("ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_retorno DATE;"))
         flash("Schema corrigido: datas adicionadas em hospitais ✅", "success")
     except Exception as e:
-        db.session.rollback()
-        flash(f"Erro ao corrigir schema: {e}", "error")
-
+        flash(f"Erro ao corrigir schema (hospitais): {repr(e)}", "error")
     return redirect(url_for("main.admin_panel"))
-
-
-
-
-
-
-
-
-
-
-

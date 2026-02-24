@@ -15,11 +15,12 @@ def create_app():
     # ✅ garante schema (antes de qualquer query)
     with app.app_context():
         try:
-            db.session.execute(text("ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_visita DATE;"))
-            db.session.execute(text("ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_retorno DATE;"))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
+            with db.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_visita DATE;"))
+                conn.execute(text("ALTER TABLE hospitais ADD COLUMN IF NOT EXISTS data_retorno DATE;"))
+            print("✅ OK: colunas data_visita/data_retorno garantidas em hospitais")
+        except Exception as e:
+            print("❌ ERRO ao garantir schema hospitais:", repr(e))
 
         # (opcional) teste de conexão
         try:
